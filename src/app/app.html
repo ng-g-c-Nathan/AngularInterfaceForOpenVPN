@@ -1,0 +1,109 @@
+<div class="min-h-screen bg-background flex">
+  <aside
+    class="fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300"
+    [class.w-64]="sidebarOpen" [class.w-0]="!sidebarOpen" [class.lg:w-16]="!sidebarOpen">
+    <div class="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
+      <div class="flex items-center gap-3" [class.lg:justify-center]="!sidebarOpen">
+        <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center glow-effect">
+          <i-lucide [img]="ShieldCheckIcon" class="w-5 h-5 text-primary"></i-lucide>
+        </div>
+
+        @if (sidebarOpen) {
+        <div class="animate-fade-in">
+          <h1 class="font-semibold text-foreground">VPN Monitor</h1>
+          <p class="text-xs text-muted-foreground">Panel de Control</p>
+        </div>
+        }
+      </div>
+      <button (click)="toggleSidebar()" class="icon-button hidden lg:flex">
+        <i-lucide [img]="sidebarOpen ? ChevronLeftIcon : MenuIcon" class="w-4 h-4"></i-lucide>
+      </button>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      @for (item of navItems; track item.id) {
+      <button (click)="handleSectionChange(item.id)" class="nav-item w-full"
+        [class.nav-item-active]="activeSection === item.id" [class.lg:justify-center]="!sidebarOpen"
+        [class.lg:px-2]="!sidebarOpen">
+        <i-lucide [img]="item.icon" class="w-5 h-5 shrink-0"
+          [class.text-primary]="activeSection === item.id"></i-lucide>
+
+        @if (sidebarOpen) {
+        <span class="truncate">{{ item.label }}</span>
+        }
+      </button>
+      }
+    </nav>
+
+    <div class="p-4 border-t border-sidebar-border" [class.lg:flex]="!sidebarOpen"
+      [class.lg:justify-center]="!sidebarOpen">
+      <div class="flex flex-col gap-2 px-3 py-2 rounded-lg bg-sidebar-accent/50" [class.lg:p-2]="!sidebarOpen">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <i-lucide [img]="ActivityIcon" class="w-4 h-4" [class.text-success]="systemStatus.active === 'active'"
+              [class.text-destructive]="systemStatus.active !== 'active'"></i-lucide>
+            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+              [class.bg-success]="systemStatus.active === 'active'"
+              [class.bg-destructive]="systemStatus.active !== 'active'"
+              [class.animate-pulse-glow]="systemStatus.active === 'active'"></span>
+          </div>
+
+          @if (sidebarOpen) {
+          <div class="animate-fade-in">
+            <p class="text-xs font-medium text-foreground">Sistema Activo</p>
+            <p class="text-xs text-muted-foreground">VPN Online</p>
+          </div>
+          }
+        </div>
+
+        @if (sidebarOpen) {
+        <div class="mt-1 pt-2 border-t border-sidebar-border/50 animate-fade-in">
+          <p class="text-[10px] font-mono text-muted-foreground/80">
+            PID: <span class="text-primary">{{ systemStatus.pid }}</span>
+          </p>
+          <p class="text-[9px] text-muted-foreground/60 leading-tight mt-0.5">
+            Desde: {{ systemStatus.since }}
+          </p>
+        </div>
+        }
+      </div>
+    </div>
+  </aside>
+
+  @if (sidebarOpen) {
+  <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden" (click)="closeSidebar()"></div>
+  }
+
+  <main class="flex-1 flex flex-col min-w-0">
+    <header
+      class="h-16 flex items-center justify-between px-6 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+      <div class="flex items-center gap-4">
+        <button (click)="toggleSidebar()" class="icon-button lg:hidden">
+          <i-lucide [img]="MenuIcon" class="w-5 h-5"></i-lucide>
+        </button>
+        <div>
+          <h2 class="font-semibold text-foreground">
+            {{ getActiveLabel() }}
+          </h2>
+          <p class="text-xs text-muted-foreground">
+            Monitoreo en tiempo real
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+          [class.bg-success/10]="systemStatus.active === 'active'"
+          [class.text-success]="systemStatus.active === 'active'" [class.bg-muted]="systemStatus.active !== 'active'"
+          [class.text-muted-foreground]="systemStatus.active !== 'active'">
+          <i-lucide [img]="GlobeIcon" class="w-3 h-3"></i-lucide>
+          {{ systemStatus.active === 'active' ? 'Conectado' : 'Desconectado' }}
+        </div>
+      </div>
+    </header>
+
+    <div class="flex-1 p-6 overflow-auto">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,96 @@
+<div class="dashboard-card animate-fade-in">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+        <i-lucide [img]="Clock" class="w-5 h-5 text-primary"></i-lucide>
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold">Capturas Automáticas</h2>
+        <p class="text-sm text-muted-foreground">
+          Actualizado: {{ lastUpdate.toLocaleTimeString('es-ES') }}
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          [(ngModel)]="autoRefresh"
+          class="w-4 h-4 rounded border-border bg-muted accent-primary"
+        />
+        <span class="text-sm text-muted-foreground">Auto-refresh (10m)</span>
+      </label>
+      <button
+        class="btn btn-outline btn-sm gap-2"
+        (click)="fetchFiles()"
+        [disabled]="isLoading"
+      >
+        <i-lucide [img]="RefreshCw" class="w-4 h-4" [class.animate-spin]="isLoading"></i-lucide>
+        Actualizar
+      </button>
+    </div>
+  </div>
+
+  @if (isLoading && files.length === 0) {
+    <div class="spinner">Cargando datos...</div> }
+
+  @if (!isLoading && files.length > 0) {
+    <div class="overflow-x-auto scrollbar-thin">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Archivo</th>
+            <th>Timestamp</th>
+            <th>Tamaño</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (file of files; track file.name) {
+            <tr>
+              <td>
+                <div class="flex items-center gap-2">
+                  <i-lucide [img]="FileText" class="w-4 h-4 text-muted-foreground"></i-lucide>
+                  <span class="font-mono text-sm">{{ file.name }}</span>
+                </div>
+              </td>
+              <td class="font-mono text-sm">{{ file.lastModified | date: 'short' }}</td>
+              <td class="font-mono text-sm">{{ file.size }}</td>
+              <td>
+                <span class="badge">{{ file.csvExists ? 'Disponible' : 'No Disponible' }}</span>
+              </td>
+              <td>
+                <div class="flex justify-end gap-1">
+                  <button
+                    class="btn btn-ghost"
+                    (click)="handleView(file)"
+                    [disabled]="!file.csvExists"
+                    title="Ver contenido"
+                  >
+                    <i-lucide [img]="Eye" class="w-4 h-4"></i-lucide>
+                  </button>
+                  <button
+                    class="btn btn-ghost"
+                    (click)="handleDownload(file)"
+                    [disabled]="!file.csvExists"
+                    title="Descargar"
+                  >
+                    <i-lucide [img]="Download" class="w-4 h-4"></i-lucide>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center p-4 text-muted-foreground">
+                No se encontraron archivos.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
