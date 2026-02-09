@@ -21,7 +21,7 @@ interface NavItem {
   standalone: true, // Asumido por el uso de imports directos
   imports: [RouterOutlet, LucideAngularModule, CommonModule],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrls: ['./app.css','../styles.css']
 })
 export class App {
   // Signal para el título: mejor rendimiento en Angular 

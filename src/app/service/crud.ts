@@ -10,7 +10,7 @@ export class CRUD {
   constructor(private clienteHttp: HttpClient) { }
 
 
-  
+
   getDashboard(): Observable<any> {
     return this.clienteHttp.get(`${this.API}/dashboard`);
   }
@@ -18,4 +18,24 @@ export class CRUD {
   getTrafficCsvListComponent(): Observable<any> {
     return this.clienteHttp.get(`${this.API}/csv_files`);
   }
+
+  repararCsv(filename: string): Observable<any> {
+  const url = `${this.API}/csv_files/reparar/${encodeURIComponent(filename)}`;
+  return this.clienteHttp.post(url, null);
+}
+
+getTrafficRange(from: string, to: string): Observable<any> {
+  // Convertimos el string de datetime-local a solo fecha ISO
+  const fromDate = from.split('T')[0]; // "2026-02-08T15:40" -> "2026-02-08"
+  const toDate   = to.split('T')[0];
+  console.log(
+    `${this.API}/traffic/range`,
+    { params: { from: fromDate, to: toDate } }
+  );
+  return this.clienteHttp.get(
+    `${this.API}/traffic/range`,
+    { params: { from: fromDate, to: toDate } }
+  );
+}
+
 }
