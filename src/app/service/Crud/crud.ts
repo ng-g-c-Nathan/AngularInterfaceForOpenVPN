@@ -28,13 +28,18 @@ getTrafficRange(from: string, to: string): Observable<any> {
   // Convertimos el string de datetime-local a solo fecha ISO
   const fromDate = from.split('T')[0]; // "2026-02-08T15:40" -> "2026-02-08"
   const toDate   = to.split('T')[0];
-  console.log(
-    `${this.API}/traffic/range`,
-    { params: { from: fromDate, to: toDate } }
-  );
   return this.clienteHttp.get(
     `${this.API}/traffic/range`,
     { params: { from: fromDate, to: toDate } }
+  );
+}
+
+
+executeVpnCommand(command: string): Observable<any> {
+  return this.clienteHttp.post(
+    `${this.API}/vpn/execute`,
+    null,
+    { params: { command } }
   );
 }
 

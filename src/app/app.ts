@@ -2,12 +2,15 @@ import { Component, signal, Input, Output, EventEmitter } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { LucideAngularModule, LucideIconData } from 'lucide-angular';
 import { CommonModule } from '@angular/common';
-import { CRUD } from './service/crud';
+import { RouterLink } from '@angular/router';
+import { NgZone } from '@angular/core';
+import { RouterLinkActive } from '@angular/router';
+import { CRUD } from './service/Crud/crud';
 // Importación masiva de iconos para su uso en el template
-import { 
-  X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon, 
-  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, 
-  BarChart3, FileText, FolderOpen, Clock, Settings 
+import {
+  X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon,
+  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users,
+  BarChart3, FileText, FolderOpen, Clock, Settings
 } from 'lucide-angular';
 
 interface NavItem {
@@ -19,20 +22,20 @@ interface NavItem {
 @Component({
   selector: 'app-root',
   standalone: true, // Asumido por el uso de imports directos
-  imports: [RouterOutlet, LucideAngularModule, CommonModule],
+  imports: [RouterOutlet, LucideAngularModule, CommonModule, RouterLink, RouterLinkActive,],
   templateUrl: './app.html',
-  styleUrls: ['./app.css','../styles.css']
+  styleUrls: ['./app.css', '../styles.css']
 })
 export class App {
   // Signal para el título: mejor rendimiento en Angular 
   protected readonly title = signal('Conqueror');
 
   // Estado del sistema (inicializado con valores por defecto)
-  systemStatus = {
+  systemStatus = signal({
     active: 'inactive',
     since: '--',
     pid: '--'
-  };
+  });
 
   // Referencias manuales de iconos para que el HTML pueda acceder a ellos
   readonly FileIcon = FileIcon;
@@ -66,10 +69,10 @@ export class App {
   ];
 
 
-    isLoading: boolean = true;
+  isLoading: boolean = true;
 
-// Inyectamos el servicio en el constructor
-  constructor(private crudService: CRUD) {}
+  // Inyectamos el servicio en el constructor
+  constructor(private crudService: CRUD, private ngZone: NgZone) { }
 
   ngOnInit(): void {
     this.checkSystemStatus();
@@ -79,13 +82,15 @@ export class App {
   checkSystemStatus(): void {
     this.crudService.getDashboard().subscribe({
       next: (data) => {
-        this.systemStatus = {
+        // 2. Actualiza el signal usando .set()
+        this.systemStatus.set({
           active: data.active,
           since: data.since,
           pid: data.main_pid
-        };
+        });
+        console.log('Nuevo estado:', this.systemStatus());
       },
-      error: (err) => console.error('Error al conectar con la VPN:', err)
+      error: (err) => console.error('Error:', err)
     });
   }
 
@@ -101,6 +106,7 @@ export class App {
 
   /** Notifica al componente padre sobre el cambio de sección */
   handleSectionChange(id: string): void {
+    console.log('Cambiando a:', id);
     this.sectionChange.emit(id);
   }
 

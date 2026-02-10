@@ -26,46 +26,38 @@
       </button>
     </div>
   </div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 p-4 rounded-lg bg-slate-900/30 border border-slate-800/50">
-  <div class="flex flex-col gap-2">
-    <label class="text-xs font-semibold text-slate-500 uppercase tracking-widest ml-1">Desde</label>
-    <div class="relative">
-      <input type="datetime-local" [(ngModel)]="filterFrom"
-        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all [color-scheme:dark]" />
-    </div>
-  </div>
-
-  <div class="flex flex-col gap-2">
-    <label class="text-xs font-semibold text-slate-500 uppercase tracking-widest ml-1">Hasta</label>
-    <div class="flex gap-2">
-      <div class="relative flex-1">
-        <input type="datetime-local" [(ngModel)]="filterTo"
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 p-4 rounded-lg bg-slate-900/30 border border-slate-800/50">
+    <div class="flex flex-col gap-2">
+      <label class="text-xs font-semibold text-slate-500 uppercase tracking-widest ml-1">Desde</label>
+      <div class="relative">
+        <input type="datetime-local" [(ngModel)]="filterFrom"
           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all [color-scheme:dark]" />
       </div>
+    </div>
 
-      <button 
-        type="button"
-        (click)="onDateFilterChange()"
-        title="Aplicar filtro"
-        class="flex items-center justify-center px-4 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-all active:scale-95"
-      >
-        <i-lucide [img]="Search" class="w-4 h-4"></i-lucide>
-        <span class="ml-2 hidden lg:inline text-xs font-bold uppercase tracking-wider">Filtrar</span>
-      </button>
-      
-      <button 
-        type="button"
-        (click)="cleanFiles()"
-        title="Limpiar filtros"
-        class="flex items-center justify-center px-3 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all active:scale-95"
-      >
-        <i-lucide [img]="Trash2" class="w-4 h-4"></i-lucide>
-      </button>
+    <div class="flex flex-col gap-2">
+      <label class="text-xs font-semibold text-slate-500 uppercase tracking-widest ml-1">Hasta</label>
+      <div class="flex gap-2">
+        <div class="relative flex-1">
+          <input type="datetime-local" [(ngModel)]="filterTo"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all [color-scheme:dark]" />
+        </div>
+
+        <button type="button" (click)="onDateFilterChange()" title="Aplicar filtro"
+          class="flex items-center justify-center px-4 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-all active:scale-95">
+          <i-lucide [img]="Search" class="w-4 h-4"></i-lucide>
+          <span class="ml-2 hidden lg:inline text-xs font-bold uppercase tracking-wider">Filtrar</span>
+        </button>
+
+        <button type="button" (click)="cleanFiles()" title="Limpiar filtros"
+          class="flex items-center justify-center px-3 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all active:scale-95">
+          <i-lucide [img]="Trash2" class="w-4 h-4"></i-lucide>
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
-  
+
   @if (isLoading && files.length === 0) {
   <div class="flex justify-center py-12 text-slate-500">
     <div class="animate-pulse flex flex-col items-center gap-2">
@@ -116,21 +108,28 @@
               Procesando
             </span>
             } @else if (file.csvStatus === 'false') {
-            <button type="button" (click)="onCsvErrorClick(file)" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full
-              text-xs font-medium bg-red-500/10 text-red-500
-              border border-red-500/20
-              hover:bg-red-500/20 transition cursor-pointer">
+            <button type="button" (click)="onCsvErrorClick(file)"
+              title="Si das click, se intentará procesar de nuevo el archivo" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full
+         text-xs font-medium bg-red-500/10 text-red-500
+         border border-red-500/20
+         hover:bg-red-500/20 transition cursor-pointer">
               <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
               Error
             </button>
+
             }
           </td>
           <td class="py-4 text-right">
             <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-              <button class="p-1.5 hover:bg-slate-700 rounded-md transition-colors" (click)="handleView(file)"
+              <button class="p-1.5 rounded-md transition-colors" [ngClass]="{
+    'hover:bg-slate-700 cursor-pointer': file.csvStatus === 'true',
+    'opacity-40 cursor-not-allowed': file.csvStatus !== 'true'
+  }" [disabled]="file.csvStatus !== 'true'" (click)="file.csvStatus === 'true' && handleView(file)"
                 title="Ver contenido">
                 <i-lucide [img]="Eye" class="w-4 h-4"></i-lucide>
               </button>
+
+
               <button class="p-1.5 hover:bg-slate-700 rounded-md transition-colors text-blue-400"
                 (click)="handleDownload(file)" title="Descargar">
                 <i-lucide [img]="Download" class="w-4 h-4"></i-lucide>
