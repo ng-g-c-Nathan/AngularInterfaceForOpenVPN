@@ -1,1 +1,119 @@
-<p>csv-viewer works!</p>
+<div class="dashboard-card animate-fade-in bg-[#0b0e14] text-slate-300 p-6 rounded-xl border border-slate-800 shadow-2xl">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+        <i-lucide [img]="FileText" class="w-5 h-5 text-amber-500"></i-lucide>
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold text-slate-100">Visor de Datos CSV</h2>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">
+          @if (rows.length > 0) {
+            Filtrados: <span class="text-amber-500/80">{{ filteredRows.length }}</span> de {{ rows.length }} registros
+          } @else {
+            Esperando archivo...
+          }
+        </p>
+      </div>
+    </div>
+    
+    <button (click)="page = 0" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-md transition-colors">
+      Resetear Vista
+    </button>
+  </div>
+
+  @if (rows.length > 0) {
+    <div class="grid grid-cols-1 gap-4 mb-6 p-4 rounded-lg bg-slate-900/30 border border-slate-800/50">
+      <div class="flex flex-col gap-2">
+        <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-1">Búsqueda rápida</label>
+        <div class="relative group">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors">
+            <i-lucide [img]="Search" class="w-4 h-4"></i-lucide>
+          </span>
+          <input
+            type="text"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+            placeholder="Buscar en todas las columnas..."
+            [(ngModel)]="searchTerm"
+            (input)="recomputeFiltered()"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-xl border border-slate-800/60 bg-slate-950/50">
+      <div class="overflow-x-auto scrollbar-thin">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-900/80 border-b border-slate-800">
+              @for (header of headers; track header) {
+                <th
+                  (click)="handleSort(header)"
+                  class="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-800 hover:text-slate-200 transition-all"
+                >
+                  <div class="flex items-center gap-2">
+                    {{ header }}
+                    <i-lucide 
+                      [img]="sort.column === header ? (sort.direction === 'asc' ? ChevronUp : ChevronDown) : RefreshCw" 
+                      class="w-3 h-3 opacity-30">
+                    </i-lucide>
+                  </div>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/50">
+            @for (row of pagedRows; track row) {
+              <tr class="hover:bg-blue-500/5 transition-colors group">
+                @for (header of headers; track header) {
+                  <td class="px-4 py-3 font-mono text-[11px] text-slate-400 group-hover:text-slate-200 transition-colors">
+                    {{ row[header] }}
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex flex-col sm:flex-row justify-between items-center px-4 py-4 border-t border-slate-800/50 gap-4 text-sm text-slate-400 bg-slate-900/20">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-medium uppercase tracking-wider text-slate-500">Filas:</span>
+            <select [(ngModel)]="pageSize" (change)="page = 0"
+              class="bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+              <option [value]="5">5</option>
+              <option [value]="10">10</option>
+              <option [value]="25">25</option>
+              <option [value]="50">50</option>
+              <option [value]="100">100</option>
+            </select>
+          </div>
+          <span class="hidden sm:inline-block w-px h-4 bg-slate-800"></span>
+          <span class="text-xs">
+            Mostrando <span class="text-slate-200">{{ page * pageSize + 1 }}</span> - 
+            <span class="text-slate-200">{{ Math.min((page + 1) * pageSize, filteredRows.length) }}</span>
+            de {{ filteredRows.length }}
+          </span>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            class="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 disabled:opacity-30 transition-all"
+            (click)="prevPage()" [disabled]="page === 0">
+            <i-lucide [img]="ChevronLeftIcon" class="w-4 h-4"></i-lucide>
+            Anterior
+          </button>
+          <button
+            class="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 disabled:opacity-30 transition-all"
+            (click)="nextPage()" [disabled]="(page + 1) * pageSize >= filteredRows.length">
+            Siguiente
+            <i-lucide [img]="ChevronRightIcon" class="w-4 h-4"></i-lucide>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+  } @else {
+   <app-traffic-csv-list-component></app-traffic-csv-list-component>
+
+  }

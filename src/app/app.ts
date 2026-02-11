@@ -8,7 +8,7 @@ import { RouterLinkActive } from '@angular/router';
 import { CRUD } from './service/Crud/crud';
 // Importación masiva de iconos para su uso en el template
 import {
-  X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon,
+  X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon,Zap,BrainCircuit,
   ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users,
   BarChart3, FileText, FolderOpen, Clock, Settings
 } from 'lucide-angular';
@@ -47,6 +47,7 @@ export class App {
   readonly ActivityIcon = ActivityIcon;
   readonly ChevronLeftIcon = ChevronLeftIcon;
   readonly ShieldCheckIcon = ShieldCheckIcon;
+  readonly Zap = Zap;
 
   // Estado de comunicación con otros componentes
   @Input() activeSection: string = '';
@@ -60,12 +61,14 @@ export class App {
    * Centralizar esto aquí facilita añadir nuevas secciones en el futuro.
    */
   readonly navItems: NavItem[] = [
-    { id: 'users', label: 'Usuarios Conectados', icon: Users },
     { id: 'traffic', label: 'Tráfico por Días', icon: BarChart3 },
     { id: 'csv', label: 'Visualizar CSV', icon: FileText },
-    { id: 'manual', label: 'Tráfico Manual', icon: FolderOpen },
+    { id: 'data', label: 'Análisis de Datos', icon: Activity }, 
+    { id: 'monitor', label: 'Monitor de Análisis', icon: Zap }, 
+    { id: 'training', label: 'Entrenar un modelo', icon: BrainCircuit },
     { id: 'auto', label: 'Tráfico Automático', icon: Clock },
     { id: 'admin', label: 'Comandos Admin', icon: Settings },
+  
   ];
 
 
@@ -88,7 +91,6 @@ export class App {
           since: data.since,
           pid: data.main_pid
         });
-        console.log('Nuevo estado:', this.systemStatus());
       },
       error: (err) => console.error('Error:', err)
     });

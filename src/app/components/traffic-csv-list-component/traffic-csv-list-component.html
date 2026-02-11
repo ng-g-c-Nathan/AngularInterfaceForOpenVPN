@@ -124,15 +124,16 @@
               <button class="p-1.5 rounded-md transition-colors" [ngClass]="{
     'hover:bg-slate-700 cursor-pointer': file.csvStatus === 'true',
     'opacity-40 cursor-not-allowed': file.csvStatus !== 'true'
-  }" [disabled]="file.csvStatus !== 'true'" (click)="file.csvStatus === 'true' && handleView(file)"
+  }" [disabled]="file.csvStatus !== 'true'" (click)="file.csvStatus === 'true' && handleView(file.csvPath)"
                 title="Ver contenido">
                 <i-lucide [img]="Eye" class="w-4 h-4"></i-lucide>
               </button>
 
 
+
               <button class="p-1.5 hover:bg-slate-700 rounded-md transition-colors text-blue-400"
-                (click)="handleDownload(file)" title="Descargar">
-                <i-lucide [img]="Download" class="w-4 h-4"></i-lucide>
+                (click)="handleDownload(file)" title="Analizar">
+                <i-lucide [img]="SearchCode" class="w-4 h-4"></i-lucide>
               </button>
             </div>
           </td>

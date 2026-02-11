@@ -1,0 +1,93 @@
+<div class="dashboard-card animate-fade-in bg-slate-950 border border-slate-800/60 p-6 rounded-xl shadow-xl text-slate-200">
+  
+  <div class="flex items-center gap-3 mb-8">
+    <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+      <i-lucide [img]="Activity" class="text-blue-400 w-5 h-5"></i-lucide>
+    </div>
+    <div>
+      <h2 class="text-lg font-semibold tracking-tight">Análisis de Tráfico</h2>
+      <p class="text-sm text-slate-500">Detección de anomalías y patrones de red</p>
+    </div>
+  </div>
+
+  @if (step === 'INITIAL') {
+    <div class="space-y-6 animate-in fade-in slide-in-from-top-4">
+      <div class="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl text-center">
+        <i-lucide [img]="ShieldAlert" class="w-12 h-12 text-blue-500/50 mx-auto mb-4"></i-lucide>
+        <h3 class="text-xl font-medium mb-2">¿Detectas tráfico inusual en el nodo?</h3>
+        <p class="text-slate-400 text-sm mb-6">Iniciaremos un escaneo profundo según tu sospecha.</p>
+        <div class="flex gap-4 justify-center">
+          <button (click)="step = 'MODE_SELECTION'" class="px-8 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
+            Sí, Analizar
+          </button>
+          <button (click)="resetAnalysis()" class="px-8 py-2 border border-slate-700 hover:bg-slate-800 text-slate-400 rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
+            No de momento
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (step === 'MODE_SELECTION') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in zoom-in-95">
+      <button (click)="selectMode('USUAL')" class="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group text-left">
+        <i-lucide [img]="BarChart3" class="w-8 h-8 text-blue-400 mb-3"></i-lucide>
+        <h3 class="font-bold text-slate-200">Tráfico Usual</h3>
+        <p class="text-xs text-slate-500 mt-1">Compara el tráfico actual contra promedios históricos.</p>
+      </button>
+
+      <button (click)="selectMode('ATTACKS')" class="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-destructive/50 hover:bg-destructive/5 transition-all group text-left">
+        <i-lucide [img]="Zap" class="w-8 h-8 text-destructive mb-3"></i-lucide>
+        <h3 class="font-bold text-slate-200">Lista de Ataques</h3>
+        <p class="text-xs text-slate-500 mt-1">Identifica firmas de ataques conocidos (DDoS, Brute Force).</p>
+      </button>
+    </div>
+  }
+
+  @if (step === 'CONFIG_USUAL') {
+    <div class="space-y-6 animate-in slide-in-from-right-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Analizar desde:</label>
+          <select [(ngModel)]="analysisConfig.range" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500">
+            <option value="today">Hoy</option>
+            <option value="yesterday">Ayer y Hoy</option>
+            <option value="48h">Últimas 48 horas</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Comparar contra:</label>
+          <select [(ngModel)]="analysisConfig.compareAgainst" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500">
+            <option value="7d">Última semana (7d)</option>
+            <option value="30d">Último mes (30d)</option>
+            <option value="90d">Trimestre (90d)</option>
+          </select>
+        </div>
+      </div>
+      <button (click)="runAnalysis()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all">
+        Iniciar Comparativa Histórica
+      </button>
+    </div>
+  }
+
+  @if (step === 'SHOW_ATTACKS') {
+    <div class="space-y-4 animate-in slide-in-from-bottom-4">
+      @for (attack of attackMocks; track attack.time) {
+        <div class="flex items-center justify-between p-4 bg-slate-900/60 border border-slate-800 rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-destructive animate-pulse"></div>
+            <div>
+              <h4 class="text-sm font-semibold text-slate-200">{{attack.type}}</h4>
+              <p class="text-[10px] text-slate-500 uppercase tracking-tight">{{attack.severity}} • IP: {{attack.source}}</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono bg-slate-800 px-2 py-1 rounded text-slate-400">{{attack.time}}</span>
+        </div>
+      } @empty {
+        <p class="text-center text-slate-500 py-4">No se detectaron amenazas activas.</p>
+      }
+      <button (click)="step = 'MODE_SELECTION'" class="w-full py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">Volver a selección</button>
+    </div>
+  }
+
+</div>

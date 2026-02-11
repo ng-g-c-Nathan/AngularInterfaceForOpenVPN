@@ -1,0 +1,101 @@
+<div class="dashboard-card animate-fade-in bg-slate-950 border border-slate-800/60 p-6 rounded-xl shadow-xl text-slate-200">
+  
+  <div class="flex items-center gap-3 mb-8">
+    <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+      <i-lucide [img]="Activity" class="text-blue-400 w-5 h-5"></i-lucide>
+    </div>
+    <div>
+      <h2 class="text-lg font-semibold tracking-tight">Análisis de Tráfico AI</h2>
+      <p class="text-sm text-slate-500">Detección proactiva de anomalías</p>
+    </div>
+  </div>
+
+  <div *ngIf="!isTrained" class="space-y-6 animate-in fade-in slide-in-from-top-4">
+    <div class="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl border-dashed text-center">
+      <i-lucide [img]="BrainCircuit" class="w-10 h-10 text-blue-400 mx-auto mb-3"></i-lucide>
+      <h3 class="text-lg font-semibold text-slate-100">Modelo no entrenado</h3>
+      <p class="text-xs text-slate-400 mb-6">El motor de IA requiere un entrenamiento inicial para procesar el tráfico de este nodo.</p>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button *ngFor="let opt of trainingOptions" 
+                (click)="selectedTrainingEffort = opt.id"
+                [ngClass]="selectedTrainingEffort === opt.id ? 'border-blue-500 bg-blue-500/20' : 'border-slate-800 bg-slate-900/40'"
+                class="p-4 rounded-xl border transition-all hover:border-blue-500/50 group">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">{{opt.name}}</div>
+          <div class="text-xs text-slate-500 group-hover:text-slate-300">{{opt.desc}}</div>
+        </button>
+      </div>
+
+      <button (click)="startTraining()" 
+              [disabled]="!selectedTrainingEffort || isTraining"
+              class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">
+        {{ isTraining ? 'Entrenando Red Neuronal...' : 'Iniciar Entrenamiento' }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isTrained">
+    
+    <div *ngIf="step === 'INITIAL'" class="space-y-6 animate-in zoom-in-95">
+      <div class="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl text-center">
+        <i-lucide [img]="ShieldAlert" class="w-12 h-12 text-blue-500/30 mx-auto mb-4"></i-lucide>
+        <h3 class="text-xl font-medium mb-2 text-slate-100">¿Hay sospechas de tráfico inusual?</h3>
+        <div class="flex gap-4 justify-center mt-6">
+          <button (click)="step = 'MODE_SELECTION'" class="px-8 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all">Analizar Ahora</button>
+          <button (click)="resetAnalysis()" class="px-8 py-2 border border-slate-700 hover:bg-slate-800 text-slate-400 rounded-lg font-bold text-xs uppercase tracking-widest transition-all">Descartar</button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="step === 'MODE_SELECTION'" class="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in slide-in-from-bottom-4">
+      <button (click)="step = 'CONFIG_USUAL'" class="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-left group">
+        <i-lucide [img]="BarChart3" class="w-8 h-8 text-blue-400 mb-3 group-hover:scale-110 transition-transform"></i-lucide>
+        <h3 class="font-bold text-slate-200">Tráfico Usual</h3>
+        <p class="text-xs text-slate-500 mt-1">Comparativa estadística contra patrones históricos.</p>
+      </button>
+
+      <button (click)="step = 'SHOW_ATTACKS'" class="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-destructive/50 hover:bg-destructive/5 transition-all text-left group">
+        <i-lucide [img]="Zap" class="w-8 h-8 text-destructive mb-3 group-hover:scale-110 transition-transform"></i-lucide>
+        <h3 class="font-bold text-slate-200">Lista de Ataques</h3>
+        <p class="text-xs text-slate-500 mt-1">Escaneo de firmas de ataques de red conocidos.</p>
+      </button>
+    </div>
+
+    <div *ngIf="step === 'CONFIG_USUAL'" class="space-y-6 animate-in slide-in-from-right-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Rango de Análisis</label>
+          <select [(ngModel)]="analysisConfig.range" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500 text-slate-300">
+            <option value="today">Hoy</option>
+            <option value="yesterday">Ayer y Hoy</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Comparar contra</label>
+          <select [(ngModel)]="analysisConfig.compareAgainst" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500 text-slate-300">
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
+          </select>
+        </div>
+      </div>
+      <button (click)="runAnalysis()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">
+        Ejecutar Análisis
+      </button>
+    </div>
+
+    <div *ngIf="step === 'SHOW_ATTACKS'" class="space-y-3 animate-in slide-in-from-bottom-4">
+      <div *ngFor="let attack of attackMocks" class="flex items-center justify-between p-4 bg-slate-900/40 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors">
+        <div class="flex items-center gap-3">
+          <div class="w-2 h-2 rounded-full bg-destructive animate-pulse"></div>
+          <div>
+            <h4 class="text-sm font-semibold text-slate-200">{{attack.type}}</h4>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest">{{attack.severity}} • {{attack.source}}</p>
+          </div>
+        </div>
+        <span class="text-[10px] font-mono text-slate-500">{{attack.time}}</span>
+      </div>
+      <button (click)="step = 'MODE_SELECTION'" class="w-full py-2 text-[10px] uppercase font-bold tracking-widest text-slate-600 hover:text-slate-400 transition-colors">Regresar</button>
+    </div>
+
+  </div>
+</div>

@@ -5,7 +5,8 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class CRUD {
-  private API = 'http://192.168.0.167:8080/api';
+  //private API = 'http://192.168.0.167:8080/api';
+  private API = 'http://192.168.0.110:8080/api';  
 
   constructor(private clienteHttp: HttpClient) { }
 
@@ -42,5 +43,21 @@ executeVpnCommand(command: string): Observable<any> {
     { params: { command } }
   );
 }
+
+downloadCsv(csvFile: string) {
+  return this.clienteHttp.post(
+    `${this.API}/csv_files/download`,
+    { CSVFILE: csvFile },
+    {
+      responseType: 'text'
+    }
+  );
+}
+
+getTrafficHistory(): Observable<any> {
+  return this.clienteHttp.get(`${this.API}/traffic/history`);
+}
+
+
 
 }

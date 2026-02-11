@@ -1,0 +1,256 @@
+<div class="dashboard-card animate-fade-in bg-slate-950 border border-slate-800/60 p-6 rounded-xl shadow-xl text-slate-200">
+  
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+        <i-lucide [img]="Activity" class="text-blue-400 w-5 h-5"></i-lucide>
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold tracking-tight">Historial de Análisis</h2>
+        <p class="text-sm text-slate-500">Monitoreo de tareas y Machine Learning</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-lg px-2 py-1">
+        <span class="text-[10px] uppercase font-bold text-slate-500">Ver:</span>
+        <select [(ngModel)]="pageSize" (change)="applyFilters()" class="bg-transparent text-xs font-bold text-slate-300 outline-none cursor-pointer">
+          <option [value]="3" class="bg-slate-900">3</option>
+          <option [value]="5" class="bg-slate-900">5</option>
+          <option [value]="10" class="bg-slate-900">10</option>
+        </select>
+      </div>
+      <button (click)="refreshJobs()" class="flex items-center gap-2 px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-lg hover:bg-slate-800 transition-colors group">
+        <i-lucide [img]="RefreshCw" [class.animate-spin]="isLoading" class="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-500"></i-lucide>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Refrescar</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 p-4 bg-slate-900/30 rounded-xl border border-slate-800/40">
+    <div class="space-y-1.5">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Longitud</label>
+      <select [(ngModel)]="filterDuration" (change)="applyFilters()" class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none focus:border-blue-500/50 text-slate-300">
+        <option value="">Todas</option>
+        <option value="SHORT">Short</option>
+        <option value="MEDIUM">Medium</option>
+        <option value="LONG">Long</option>
+        <option value="VERY_LONG">Very Long</option>
+      </select>
+    </div>
+
+    <div class="space-y-1.5">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Estado</label>
+      <select [(ngModel)]="filterStatus" (change)="applyFilters()" class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none focus:border-blue-500/50 text-slate-300">
+        <option value="">Todos</option>
+        <option value="FINISHED">Finalziado</option>
+        <option value="RUNNING">Corriendo</option>
+        <option value="ERROR">Error</option>
+      </select>
+    </div>
+
+    <div class="space-y-1.5">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Modelo</label>
+      <select [(ngModel)]="filterModel" (change)="applyFilters()" class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none focus:border-blue-500/50 text-slate-300">
+        <option value="">Todos los modelos</option>
+        <option *ngFor="let m of availableModels" [value]="m">{{ m | uppercase }}</option>
+      </select>
+    </div>
+
+    <div class="space-y-1.5">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Modo</label>
+      <select [(ngModel)]="filterMode" (change)="applyFilters()" class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none focus:border-blue-500/50 text-slate-300">
+        <option value="">Todos los modos</option>
+        <option value="low">Rápido (Low)</option>
+        <option value="normal">Normal</option>
+        <option value="hardcore">Lento (Hardcore)</option>
+      </select>
+    </div>
+
+    <div class="flex items-end">
+      <button (click)="clearFilters()" class="w-full h-[38px] bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 text-[10px] uppercase font-bold text-slate-400 hover:text-white transition-all rounded-lg">
+        Reset
+      </button>
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    <div *ngFor="let job of pagedJobs" 
+         class="group relative bg-slate-900/40 border border-slate-800 rounded-xl p-5 transition-all hover:border-slate-700">
+      
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-3 mb-1">
+            <div [ngClass]="{
+              'bg-blue-500/10 text-blue-400': job.duration_category === 'SHORT',
+              'bg-amber-500/10 text-amber-400': job.duration_category === 'MEDIUM',
+              'bg-purple-500/10 text-purple-400': job.duration_category === 'LONG',
+              'bg-rose-500/10 text-rose-400': job.duration_category === 'VERY_LONG' || job.error
+            }" class="w-9 h-9 rounded-lg flex items-center justify-center border border-white/5">
+              <i-lucide [img]="job.error ? AlertCircle : Clock" class="w-4 h-4"></i-lucide>
+            </div>
+            
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-base text-slate-100 tracking-tight">
+                  {{ job.duration_human || (job.error ? 'Error en ejecución' : 'Calculando...') }}
+                </h3>
+                <span *ngIf="job.duration_category" 
+                  [ngClass]="job.error ? 'text-rose-400 border-rose-500/20' : 'text-blue-400 border-blue-500/20'"
+                  class="text-[9px] px-1.5 py-0.5 rounded border font-bold uppercase tracking-widest bg-slate-950/50">
+                  {{ job.error ? 'ERROR' : job.duration_category }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 font-mono truncate max-w-[400px] mt-0.5" [title]="job.csv_file">
+                {{ job.csv_file }}
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-y-2 gap-x-4 mt-4 text-[11px] text-slate-500">
+            <span class="flex items-center gap-1.5">
+              <i-lucide [img]="Calendar" class="w-3.5 h-3.5"></i-lucide>
+              {{ job.created_at | date:'dd MMM, HH:mm' }}
+            </span>
+            <span class="flex items-center gap-1.5">
+              <i-lucide [img]="Layers" class="w-3.5 h-3.5"></i-lucide>
+              Fase: <b class="text-slate-300 uppercase tracking-tighter">{{ job.stage }}</b>
+            </span>
+            <span *ngIf="job.result?.model_folder" class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/5 border border-blue-500/10">
+              <i-lucide [img]="Box" class="w-3.5 h-3.5 text-blue-400/70"></i-lucide>
+              Modelo: <b class="text-blue-400 uppercase tracking-tighter">{{ job.result.model_folder }}</b>
+            </span>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2 w-full md:w-56">
+          <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+            <span [ngClass]="{
+              'text-emerald-400': job.status === 'FINISHED',
+              'text-rose-400': job.status === 'ERROR' || job.error,
+              'text-blue-400': job.status === 'RUNNING'
+            }" class="flex items-center gap-1">
+              <span *ngIf="job.status === 'RUNNING'" class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+              {{ job.error ? 'ERROR' : job.status }}
+            </span>
+            <span class="text-slate-400">{{ job.progress }}%</span>
+          </div>
+          <div class="h-1.5 w-full bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+            <div 
+              class="h-full transition-all duration-1000 ease-out"
+              [ngClass]="{
+                'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]': job.status === 'FINISHED',
+                'bg-rose-600': job.status === 'ERROR' || job.error,
+                'bg-blue-500': job.status === 'RUNNING'
+              }"
+              [style.width.%]="job.progress">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center">
+          <button *ngIf="job.result" (click)="viewDetails(job)"
+                  class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700/50 shadow-lg">
+            <i-lucide [img]="Eye" class="w-4 h-4"></i-lucide>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="job.error" class="mt-4 p-4 rounded-lg bg-rose-500/5 border border-rose-500/20 text-rose-400 flex flex-col gap-2 animate-in slide-in-from-top-2 duration-300">
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-tight">
+          <i-lucide [img]="AlertCircle" class="w-4 h-4"></i-lucide>
+          Detalle del Error
+        </div>
+        <p class="text-[13px] font-mono leading-relaxed opacity-90 ml-6">
+          {{ job.error }}
+        </p>
+      </div>
+
+      <div *ngIf="job.result && job.status === 'FINISHED'" class="mt-5 pt-5 border-t border-slate-800/40 animate-in fade-in zoom-in-95 duration-300">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div class="space-y-3">
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1">Dataset</p>
+              <p class="text-sm font-mono text-slate-300">{{ job.result.rows | number }} rows</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1">Modo</p>
+              <div class="flex items-center gap-2">
+                <span class="flex gap-0.5">
+                  <span class="w-1 h-2 rounded-full bg-cyan-500"></span>
+                  <span class="w-1 h-2 rounded-full" [ngClass]="job.result.mode !== 'low' ? 'bg-indigo-500' : 'bg-slate-700'"></span>
+                  <span class="w-1 h-2 rounded-full" [ngClass]="job.result.mode === 'hardcore' ? 'bg-fuchsia-500' : 'bg-slate-700'"></span>
+                </span>
+                <span class="text-xs font-mono text-slate-400 uppercase">{{ job.result.mode }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1">Anomaly Ratio</p>
+              <p class="text-sm font-mono" [ngClass]="job.result.anomaly_ratio_iso >= 0.8 ? 'text-rose-500' : 'text-emerald-400'">
+                {{ job.result.anomaly_ratio_iso | percent:'1.1-2' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1">K-Means Dist.</p>
+              <p class="text-sm font-mono text-slate-300">{{ job.result.kmeans_distance_mean | number:'1.2-2' }}</p>
+            </div>
+          </div>
+
+          <div class="col-span-2 bg-slate-950/40 rounded-lg p-3 border border-slate-800/50">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[10px] uppercase text-blue-400 font-bold tracking-widest">Model Training Context</p>
+              <i-lucide [img]="Database" class="w-3 h-3 text-slate-600"></i-lucide>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <p class="text-[9px] text-slate-500 uppercase">Trained Rows / Features</p>
+                <p class="text-xs font-mono text-slate-300">
+                  {{ job.result.trained_rows | number }} / <span class="text-blue-400">{{ job.result.trained_features }} feats</span>
+                </p>
+              </div>
+              <div class="space-y-1 text-right">
+                <p class="text-[9px] text-slate-500 uppercase">Training Date</p>
+                <p class="text-xs font-mono text-slate-400">
+                  {{ job.result.trained_at | date:'dd/MM/yy HH:mm' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="filteredJobs.length > 0" class="mt-8 flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/60 pt-6 gap-4">
+    <div class="text-xs text-slate-500 font-medium order-2 sm:order-1">
+      Mostrando <span class="text-slate-200">{{ (page * pageSize) + 1 }}</span> - 
+      <span class="text-slate-200">{{ Math.min((page + 1) * pageSize, filteredJobs.length) }}</span> 
+      de <span class="text-slate-200">{{ filteredJobs.length }}</span> resultados
+    </div>
+
+    <div class="flex items-center gap-2 order-1 sm:order-2">
+      <button (click)="prevPage()" [disabled]="page === 0" class="p-2 rounded-lg border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-20 transition-all">
+        <i-lucide [img]="ChevronLeftIcon" class="w-4 h-4"></i-lucide>
+      </button>
+      <div class="flex items-center gap-1 mx-2">
+        <span class="text-xs font-black text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-md border border-blue-500/20">{{ page + 1 }}</span>
+        <span class="text-xs text-slate-600 px-1 italic">de</span>
+        <span class="text-xs font-bold text-slate-400 px-2">{{ totalPages || 1 }}</span>
+      </div>
+      <button (click)="nextPage()" [disabled]="(page + 1) >= (totalPages || 1)" class="p-2 rounded-lg border border-slate-800 bg-slate-900/50 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-20 transition-all">
+        <i-lucide [img]="ChevronRightIcon" class="w-4 h-4"></i-lucide>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="filteredJobs.length === 0 && !isLoading" class="py-20 text-center">
+    <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-800">
+      <i-lucide [img]="SearchCode" class="w-8 h-8 text-slate-700"></i-lucide>
+    </div>
+    <h3 class="text-slate-300 font-bold">Sin coincidencias</h3>
+    <button (click)="clearFilters()" class="mt-4 text-xs text-blue-400 hover:underline">Limpiar filtros</button>
+  </div>
+</div>

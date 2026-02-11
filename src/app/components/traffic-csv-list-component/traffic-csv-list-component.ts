@@ -6,10 +6,11 @@ import { Subject, takeUntil } from 'rxjs';
 // Servicios y Módulos de Iconos
 import { CRUD } from '../../service/Crud/crud';
 import { LucideAngularModule } from 'lucide-angular';
-import { 
+import { Router } from '@angular/router';
+import {
   X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon, Trash2, Search,
-  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, ChevronRightIcon,
-  BarChart3, FileText, FolderOpen, Clock, Settings, RefreshCw, Eye, Download 
+  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, ChevronRightIcon,SearchCode,
+  BarChart3, FileText, FolderOpen, Clock, Settings, RefreshCw, Eye, Download
 } from 'lucide-angular';
 
 @Component({
@@ -20,7 +21,7 @@ import {
   styleUrls: ['./traffic-csv-list-component.css', '../../../styles.css'],
 })
 export class TrafficCsvListComponent implements OnInit, OnDestroy {
-  
+
   /** * Subject para gestionar la desuscripción automática de observables.
    * Evita fugas de memoria al destruir el componente.
    */
@@ -36,6 +37,8 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   readonly Download = Download;
   readonly ChevronLeftIcon = ChevronLeftIcon;
   readonly ChevronRightIcon = ChevronRightIcon;
+  readonly Activity = Activity;
+  readonly SearchCode = SearchCode;
   readonly Search = Search;
 
   /** * Propiedades de paginación y utilidades.
@@ -56,8 +59,9 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
 
   constructor(
     private crudService: CRUD,
-    private cdr: ChangeDetectorRef
-  ) {}
+    private cdr: ChangeDetectorRef,
+    private router: Router
+  ) { }
 
   /**
    * Inicializa el componente cargando los archivos y configurando el refresco automático.
@@ -92,7 +96,8 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
             name: file.name,
             lastModified: new Date(file.lastModified),
             size: file.size,
-            csvStatus: file.csvStatus
+            csvStatus: file.csvStatus,
+            csvPath: file.csvPath
           }));
           this.aux = [...this.files];
           this.lastUpdate = new Date();
@@ -113,7 +118,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
     this.crudService.repararCsv(file.name).subscribe({
       next: () => {
         file.csvStatus = 'pending';
-        this.cdr.detectChanges(); 
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Error al intentar reparar:', err)
     });
@@ -171,7 +176,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
       const fileDate = new Date(file.lastModified);
       return fileDate >= fromDate && fileDate <= toDate;
     });
-    
+
     this.page = 0; // Reiniciar paginación al filtrar
   }
 
@@ -180,8 +185,11 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
    * Lógica para la previsualización de un archivo específico.
    * @param file Objeto del archivo a visualizar.
    */
-  handleView(file: any): void {
-    console.log('Viewing file:', file.name);
+  handleView(csvPath: string): void {
+    this.router.navigate(
+      ['/csv'],
+      { queryParams: { path: csvPath } }
+    );
   }
 
   /**
