@@ -65,7 +65,6 @@ export class App {
     { id: 'csv', label: 'Visualizar CSV', icon: FileText },
     { id: 'data', label: 'Análisis de Datos', icon: Activity }, 
     { id: 'monitor', label: 'Monitor de Análisis', icon: Zap }, 
-    { id: 'training', label: 'Entrenar un modelo', icon: BrainCircuit },
     { id: 'auto', label: 'Tráfico Automático', icon: Clock },
     { id: 'admin', label: 'Comandos Admin', icon: Settings },
   

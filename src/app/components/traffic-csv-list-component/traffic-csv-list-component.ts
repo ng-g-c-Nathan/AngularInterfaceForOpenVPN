@@ -2,33 +2,38 @@ import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
+import { Router, RouterModule } from '@angular/router';
 
 // Servicios y Módulos de Iconos
 import { CRUD } from '../../service/Crud/crud';
 import { LucideAngularModule } from 'lucide-angular';
-import { Router } from '@angular/router';
 import {
   X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon, Trash2, Search,
-  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, ChevronRightIcon,SearchCode,
+  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, ChevronRightIcon, SearchCode,
   BarChart3, FileText, FolderOpen, Clock, Settings, RefreshCw, Eye, Download
 } from 'lucide-angular';
 
+/**
+ * Componente TrafficCsvListComponent
+ * * Gestiona la visualización, filtrado y acciones de archivos de tráfico en formato CSV.
+ * Incluye funcionalidades de paginación, auto-refresco, filtrado por fecha y 
+ * comunicación con servicios de reparación y análisis (scoring) de tráfico.
+ */
 @Component({
   selector: 'app-traffic-csv-list-component',
   standalone: true,
-  imports: [LucideAngularModule, FormsModule, CommonModule],
+  imports: [LucideAngularModule, FormsModule, CommonModule, RouterModule],
   templateUrl: './traffic-csv-list-component.html',
   styleUrls: ['./traffic-csv-list-component.css', '../../../styles.css'],
 })
 export class TrafficCsvListComponent implements OnInit, OnDestroy {
 
-  /** * Subject para gestionar la desuscripción automática de observables.
-   * Evita fugas de memoria al destruir el componente.
-   */
+  // --- GESTIÓN DE MEMORIA ---
+  /** Subject para gestionar la desuscripción automática de observables y evitar memory leaks */
   private destroy$ = new Subject<void>();
 
-  /** * Referencias de iconos para uso en el template HTML.
-   */
+  // --- ICONOS (LUCIDE) ---
+  /** Referencias de iconos para uso en el template HTML */
   readonly Clock = Clock;
   readonly FileText = FileText;
   readonly RefreshCw = RefreshCw;
@@ -41,20 +46,30 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   readonly SearchCode = SearchCode;
   readonly Search = Search;
 
-  /** * Propiedades de paginación y utilidades.
-   */
+  // --- PAGINACIÓN Y UTILIDADES ---
+  /** Referencia a Math para cálculos matemáticos en el template */
   Math = Math;
+  /** Índice de la página actual */
   page: number = 0;
+  /** Cantidad de elementos por página */
   pageSize: number = 3;
+  /** Controla la visibilidad del aviso de "Enviado a revisión" */
+  showReviewMessage = false;
 
-  /** * Estado local del componente y datos.
-   */
-  files: any[] = [];           // Lista de archivos filtrada/actual
-  aux: any[] = [];             // Copia de seguridad para filtros
+  // --- ESTADO LOCAL Y DATOS ---
+  /** Lista de archivos procesada y filtrada que se muestra en la UI */
+  files: any[] = [];
+  /** Copia de seguridad de los datos originales para realizar filtros rápidos */
+  aux: any[] = [];
+  /** Indica si los datos están siendo cargados desde el servidor */
   isLoading: boolean = true;
+  /** Almacena la marca de tiempo de la última actualización exitosa */
   lastUpdate: Date = new Date();
+  /** Define si el componente debe actualizarse automáticamente */
   autoRefresh: boolean = true;
+  /** Fecha inicial para el filtro de rango */
   filterFrom: string = '';
+  /** Fecha final para el filtro de rango */
   filterTo: string = '';
 
   constructor(
@@ -64,27 +79,32 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   ) { }
 
   /**
-   * Inicializa el componente cargando los archivos y configurando el refresco automático.
+   * Ciclo de vida: Inicializa la carga de archivos y configura el intervalo
+   * de actualización automática (cada 10 minutos).
    */
   ngOnInit(): void {
     this.fetchFiles();
 
     if (this.autoRefresh) {
+      // Configura el intervalo de refresco cada 10 minutos
       setInterval(() => this.fetchFiles(), 10 * 60 * 1000);
     }
   }
 
   /**
-   * Limpia las suscripciones activas al destruir el componente.
+   * Ciclo de vida: Limpia las suscripciones activas al destruir el componente
+   * para prevenir fugas de memoria.
    */
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
+  // --- MÉTODOS DE DATOS (API) ---
+
   /**
-   * Obtiene la lista de archivos CSV desde el servidor.
-   * Mapea los datos recibidos para asegurar el formato de fecha y tipos.
+   * Obtiene la lista de archivos CSV desde el backend.
+   * Transforma las fechas de string a objetos Date para su manipulación.
    */
   fetchFiles(): void {
     this.isLoading = true;
@@ -102,6 +122,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
           this.aux = [...this.files];
           this.lastUpdate = new Date();
           this.isLoading = false;
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error al obtener los archivos CSV:', err);
@@ -111,8 +132,9 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Intenta reparar un archivo CSV que presenta errores de estado.
-   * @param file El objeto del archivo a reparar.
+   * Envía una petición para reparar un archivo CSV que reporta errores.
+   * Cambia el estado visual a 'pending' tras una respuesta exitosa.
+   * @param file Objeto del archivo a reparar.
    */
   onCsvErrorClick(file: any): void {
     this.crudService.repararCsv(file.name).subscribe({
@@ -124,44 +146,46 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
     });
   }
 
+  // --- LÓGICA DE PAGINACIÓN ---
 
   /**
-   * Obtiene el subconjunto de archivos según la página actual.
+   * Getter que retorna el segmento de archivos correspondiente a la página actual.
    */
   get pagedFiles() {
     const start = this.page * this.pageSize;
     return this.files.slice(start, start + this.pageSize);
   }
 
-  /**
-   * Avanza a la siguiente página de resultados.
-   */
+  /** Avanza a la siguiente página de resultados si existe */
   nextPage(): void {
     if ((this.page + 1) * this.pageSize < this.files.length) {
       this.page++;
     }
   }
 
-  /**
-   * Retrocede a la página anterior de resultados.
-   */
+  /** Retrocede a la página anterior de resultados si no está en la primera */
   prevPage(): void {
     if (this.page > 0) {
       this.page--;
     }
   }
 
+  // --- FILTROS Y BÚSQUEDA ---
+
   /**
-   * Restaura la lista de archivos a su estado original y limpia los inputs de filtro.
+   * Restaura la lista de archivos a su estado original (sin filtros)
+   * y limpia los campos de entrada de fecha.
    */
   cleanFiles(): void {
     this.files = [...this.aux];
     this.filterFrom = '';
     this.filterTo = '';
+    this.page = 0;
   }
 
   /**
-   * Filtra la lista de archivos basándose en un rango de fechas (lastModified).
+   * Filtra la colección de archivos basándose en un rango de fechas de modificación.
+   * Si las fechas son inválidas o están vacías, restaura la lista original.
    */
   onDateFilterChange(): void {
     if (!this.filterFrom || !this.filterTo) {
@@ -177,13 +201,14 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
       return fileDate >= fromDate && fileDate <= toDate;
     });
 
-    this.page = 0; // Reiniciar paginación al filtrar
+    this.page = 0; // Reiniciar paginación al aplicar nuevos filtros
   }
 
+  // --- ACCIONES DE USUARIO ---
 
   /**
-   * Lógica para la previsualización de un archivo específico.
-   * @param file Objeto del archivo a visualizar.
+   * Navega a la vista de detalle de un CSV utilizando su ruta como parámetro.
+   * @param csvPath Ruta del archivo en el servidor.
    */
   handleView(csvPath: string): void {
     this.router.navigate(
@@ -193,10 +218,26 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Gestiona la descarga de un archivo del listado.
-   * @param file Objeto del archivo a descargar.
+   * Envía el archivo seleccionado al servicio de scoring de tráfico.
+   * Muestra un mensaje de éxito temporal y gestiona errores de procesamiento.
+   * @param csvPath Ruta del archivo para analizar.
    */
-  handleDownload(file: any): void {
-    console.log('Downloading file:', file.name);
+  handleDownload(csvPath: string): void {
+    console.log('Enviando a revisión:', csvPath);
+
+    this.crudService.scoreTraffic(csvPath).subscribe({
+      next: (res) => {
+        this.showReviewMessage = true;
+        // Ocultar notificación de éxito tras 5 segundos
+        setTimeout(() => {
+          this.showReviewMessage = false;
+          this.cdr.detectChanges();
+        }, 5000);
+      },
+      error: (err) => {
+        console.error('Error al enviar a revisión', err);
+        alert('Hubo un error al procesar la solicitud');
+      }
+    });
   }
 }

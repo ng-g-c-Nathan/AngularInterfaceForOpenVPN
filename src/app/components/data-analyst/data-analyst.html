@@ -1,93 +1,187 @@
-<div class="dashboard-card animate-fade-in bg-slate-950 border border-slate-800/60 p-6 rounded-xl shadow-xl text-slate-200">
+<div class="dashboard-card animate-fade-in bg-slate-950 border border-slate-800/60 p-6 rounded-xl shadow-xl text-slate-200 relative">
   
-  <div class="flex items-center gap-3 mb-8">
-    <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-      <i-lucide [img]="Activity" class="text-blue-400 w-5 h-5"></i-lucide>
-    </div>
-    <div>
-      <h2 class="text-lg font-semibold tracking-tight">Análisis de Tráfico</h2>
-      <p class="text-sm text-slate-500">Detección de anomalías y patrones de red</p>
+  <div class="flex items-center justify-between mb-8 border-b border-slate-800/50 pb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+        <i-lucide [img]="Activity" class="text-blue-400 w-5 h-5"></i-lucide>
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold tracking-tight">Centro de entrenamiento de datos</h2>
+        <p class="text-xs text-slate-500 uppercase tracking-widest">Registro de modelos y canal de capacitación</p>
+      </div>
     </div>
   </div>
 
-  @if (step === 'INITIAL') {
-    <div class="space-y-6 animate-in fade-in slide-in-from-top-4">
-      <div class="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl text-center">
-        <i-lucide [img]="ShieldAlert" class="w-12 h-12 text-blue-500/50 mx-auto mb-4"></i-lucide>
-        <h3 class="text-xl font-medium mb-2">¿Detectas tráfico inusual en el nodo?</h3>
-        <p class="text-slate-400 text-sm mb-6">Iniciaremos un escaneo profundo según tu sospecha.</p>
-        <div class="flex gap-4 justify-center">
-          <button (click)="step = 'MODE_SELECTION'" class="px-8 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
-            Sí, Analizar
-          </button>
-          <button (click)="resetAnalysis()" class="px-8 py-2 border border-slate-700 hover:bg-slate-800 text-slate-400 rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
-            No de momento
-          </button>
-        </div>
-      </div>
-    </div>
-  }
-
-  @if (step === 'MODE_SELECTION') {
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in zoom-in-95">
-      <button (click)="selectMode('USUAL')" class="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group text-left">
-        <i-lucide [img]="BarChart3" class="w-8 h-8 text-blue-400 mb-3"></i-lucide>
-        <h3 class="font-bold text-slate-200">Tráfico Usual</h3>
-        <p class="text-xs text-slate-500 mt-1">Compara el tráfico actual contra promedios históricos.</p>
-      </button>
-
-      <button (click)="selectMode('ATTACKS')" class="p-5 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-destructive/50 hover:bg-destructive/5 transition-all group text-left">
-        <i-lucide [img]="Zap" class="w-8 h-8 text-destructive mb-3"></i-lucide>
-        <h3 class="font-bold text-slate-200">Lista de Ataques</h3>
-        <p class="text-xs text-slate-500 mt-1">Identifica firmas de ataques conocidos (DDoS, Brute Force).</p>
-      </button>
-    </div>
-  }
-
-  @if (step === 'CONFIG_USUAL') {
-    <div class="space-y-6 animate-in slide-in-from-right-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div>
-          <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Analizar desde:</label>
-          <select [(ngModel)]="analysisConfig.range" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500">
-            <option value="today">Hoy</option>
-            <option value="yesterday">Ayer y Hoy</option>
-            <option value="48h">Últimas 48 horas</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 block">Comparar contra:</label>
-          <select [(ngModel)]="analysisConfig.compareAgainst" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500">
-            <option value="7d">Última semana (7d)</option>
-            <option value="30d">Último mes (30d)</option>
-            <option value="90d">Trimestre (90d)</option>
-          </select>
-        </div>
-      </div>
-      <button (click)="runAnalysis()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all">
-        Iniciar Comparativa Histórica
-      </button>
-    </div>
-  }
-
-  @if (step === 'SHOW_ATTACKS') {
-    <div class="space-y-4 animate-in slide-in-from-bottom-4">
-      @for (attack of attackMocks; track attack.time) {
-        <div class="flex items-center justify-between p-4 bg-slate-900/60 border border-slate-800 rounded-xl">
-          <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full bg-destructive animate-pulse"></div>
-            <div>
-              <h4 class="text-sm font-semibold text-slate-200">{{attack.type}}</h4>
-              <p class="text-[10px] text-slate-500 uppercase tracking-tight">{{attack.severity}} • IP: {{attack.source}}</p>
-            </div>
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+    
+    <div class="xl:col-span-4 space-y-6">
+      <div class="p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 shadow-inner">
+        <h3 class="text-xs font-bold text-blue-400 mb-6 flex items-center gap-2">
+          <i-lucide [img]="Zap" class="w-4 h-4"></i-lucide>
+          GENERAR NUEVO MODELO
+        </h3>
+        
+        <div class="space-y-5">
+          <div class="relative">
+            <label class="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-2 block">Rango Inicial</label>
+            <input type="date" [(ngModel)]="trainRange.start" 
+                   class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all [color-scheme:dark]">
           </div>
-          <span class="text-[10px] font-mono bg-slate-800 px-2 py-1 rounded text-slate-400">{{attack.time}}</span>
+          
+          <div class="relative">
+            <label class="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-2 block">Rango Final</label>
+            <input type="date" [(ngModel)]="trainRange.end" 
+                   class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all [color-scheme:dark]">
+          </div>
+
+          <button (click)="trainNewModel()" 
+                  class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-900/40 transition-all active:scale-[0.98]">
+            Lanzar Entrenamiento
+          </button>
+
+          <div class="flex items-center gap-3 my-2">
+            <div class="h-[1px] flex-1 bg-slate-800"></div>
+            <span class="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">o también</span>
+            <div class="h-[1px] flex-1 bg-slate-800"></div>
+          </div>
+
+          <button (click)="trainAllData()" 
+                  class="w-full py-3 bg-slate-900 border border-slate-700 hover:border-blue-500/50 hover:bg-slate-800 text-slate-300 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            <i-lucide [img]="BrainCircuit" class="w-3 h-3 text-blue-400"></i-lucide>
+            Entrenar con todos los datos
+          </button>
         </div>
-      } @empty {
-        <p class="text-center text-slate-500 py-4">No se detectaron amenazas activas.</p>
+      </div>
+    </div>
+
+    <div class="xl:col-span-8 space-y-8">
+      
+      @if (trainingQueue.length > 0) {
+        <section class="animate-in fade-in slide-in-from-right-4">
+          <h3 class="text-[10px] uppercase tracking-[0.2em] text-yellow-500/80 font-bold mb-4 flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+            </span>
+            Pipeline en ejecución
+          </h3>
+          
+          <div class="space-y-4">
+            @for (job of trainingQueue; track job.id) {
+              @if(job.status !== 'done') {
+                <div class="bg-slate-900/40 border border-yellow-500/20 rounded-2xl p-5 border-l-4 border-l-yellow-500">
+                  <div class="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 class="text-sm font-bold text-slate-200">Training: {{job.folder_name}}</h4>
+                      <p class="text-[10px] text-slate-500">Iniciado: {{job.started_at | date:'HH:mm:ss'}}</p>
+                    </div>
+                    <span class="px-2 py-1 bg-yellow-500/10 text-yellow-500 text-[10px] font-bold rounded uppercase tracking-tighter italic">Processing...</span>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2">
+                    @for (phase of job.phases; track phase.name) {
+                      @let isDone = phase.status === 'done';
+                      @let isRunning = phase.status === 'running';
+                      
+                      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-medium transition-all"
+                           [class]="isDone ? 'border-blue-500/30 bg-blue-500/5 text-blue-400' : 
+                                    isRunning ? 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500' : 
+                                    'border-slate-800 bg-slate-900/50 text-slate-600'">
+                        <i-lucide [img]="getPhaseIcon(phase.status)" [class.animate-spin]="isRunning" class="w-3 h-3"></i-lucide>
+                        {{phase.name}}
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </section>
       }
-      <button (click)="step = 'MODE_SELECTION'" class="w-full py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">Volver a selección</button>
+
+      <section>
+        <h3 class="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-4">Modelos Disponibles</h3>
+        <div class="grid gap-3 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
+          @for (model of trainedModels; track model.folder) {
+            @let isHardcore = model.mode === 'hardcore';
+            
+            <div class="group flex items-center justify-between p-4 bg-slate-900/40 border border-slate-800/50 rounded-xl hover:bg-slate-900 hover:border-blue-500/30 transition-all cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div [class]="isHardcore ? 'text-rose-400 bg-rose-400/10 border-rose-400/10' : 'text-emerald-400 bg-emerald-400/10 border-emerald-400/10'" 
+                     class="w-10 h-10 rounded-lg flex items-center justify-center border">
+                  <i-lucide [img]="ShieldAlert" class="w-5 h-5"></i-lucide>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-slate-200 capitalize">{{model.folder_name}}</span>
+                    <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-mono">{{model.mode}}</span>
+                  </div>
+                  <div class="flex gap-3 mt-1">
+                    <span class="text-[10px] text-slate-500 font-mono italic">{{model.num_rows | number}} rows</span>
+                    <span class="text-[10px] text-slate-600 tracking-tighter">{{model.trained_at | date:'mediumDate'}}</span>
+                  </div>
+                </div>
+              </div>
+              <i-lucide [img]="ChevronRight" class="w-4 h-4 text-slate-700 group-hover:text-blue-400 group-hover:translate-x-1 transition-all"></i-lucide>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+
+  @if (showTrainingModal) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" (click)="!isTraining && (showTrainingModal = false)"></div>
+      
+      <div class="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-blue-500/20 flex items-center justify-center">
+              <i-lucide [img]="BrainCircuit" class="text-blue-400 w-4 h-4"></i-lucide>
+            </div>
+            <h3 class="text-lg font-bold text-slate-100">Intensidad del Modelo</h3>
+          </div>
+          @if (!isTraining) {
+            <button (click)="showTrainingModal = false" class="text-slate-500 hover:text-white transition-colors">
+              <i-lucide [img]="X" class="w-5 h-5"></i-lucide>
+            </button>
+          }
+        </div>
+
+        <div class="p-6 space-y-6">
+          <div class="grid grid-cols-1 gap-3">
+            @for (opt of trainingOptions; track opt.id) {
+              @let isSelected = selectedTrainingEffort === opt.id;
+              
+              <button (click)="!isTraining && (selectedTrainingEffort = opt.id)"
+                      [class]="isSelected ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-950/40'"
+                      class="flex items-center justify-between p-4 rounded-xl border transition-all hover:border-blue-500/50 group text-left">
+                <div>
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">{{opt.name}}</div>
+                  <div class="text-xs text-slate-500 group-hover:text-slate-300">{{opt.desc}}</div>
+                </div>
+                <div [class.opacity-100]="isSelected" class="opacity-0 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                </div>
+              </button>
+            }
+          </div>
+
+          <button (click)="startTraining()" 
+                  [disabled]="!selectedTrainingEffort || isTraining"
+                  class="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/40">
+            @if (isTraining) {
+              <span class="flex items-center justify-center gap-2">
+                <i-lucide [img]="Loader2" class="w-4 h-4 animate-spin"></i-lucide>
+                Iniciando Pipeline...
+              </span>
+            } @else {
+              Confirmar Entrenamiento
+            }
+          </button>
+        </div>
+      </div>
     </div>
   }
-
 </div>

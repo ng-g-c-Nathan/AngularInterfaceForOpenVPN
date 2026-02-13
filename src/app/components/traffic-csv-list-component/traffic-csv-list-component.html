@@ -66,7 +66,31 @@
     </div>
   </div>
   }
+  @if (showReviewMessage) {
+  <div
+    class="mb-6 relative overflow-hidden bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 animate-in fade-in slide-in-from-top-4 duration-300">
+    <div class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+          <i-lucide [img]="SearchCode" class="w-4 h-4 text-blue-400"></i-lucide>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-blue-100">Archivo enviado a revisión</h4>
+          <p class="text-xs text-blue-300/80">El sistema está calculando el score de tráfico. Puedes ver el progreso en
+            tiempo real.</p>
+        </div>
+      </div>
 
+      <a routerLink="/monitor"
+        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20">
+        Revisar
+        <i-lucide [img]="ChevronRightIcon" class="w-3 h-3"></i-lucide>
+      </a>
+    </div>
+
+    <div class="absolute bottom-0 left-0 h-1 bg-blue-500/50 animate-[progress_8s_linear]" style="width: 100%;"></div>
+  </div>
+  }
   @if (!isLoading && files.length > 0) {
   <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse">
@@ -131,8 +155,11 @@
 
 
 
-              <button class="p-1.5 hover:bg-slate-700 rounded-md transition-colors text-blue-400"
-                (click)="handleDownload(file)" title="Analizar">
+              <button class="p-1.5 rounded-md transition-colors text-blue-400" [ngClass]="{
+    'hover:bg-slate-700 cursor-pointer': file.csvStatus === 'true',
+    'opacity-40 cursor-not-allowed': file.csvStatus !== 'true'
+  }" [disabled]="file.csvStatus !== 'true'" (click)="file.csvStatus === 'true' && handleDownload(file.csvPath)"
+                title="Analizar">
                 <i-lucide [img]="SearchCode" class="w-4 h-4"></i-lucide>
               </button>
             </div>

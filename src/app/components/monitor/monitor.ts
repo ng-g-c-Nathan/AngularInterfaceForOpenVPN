@@ -8,16 +8,23 @@ import {
   Box, Layers, Eye, CheckCircle, AlertCircle 
 } from 'lucide-angular';
 
+/**
+ * Componente Monitor
+ * * Se encarga de la visualización y seguimiento del historial de tráfico y trabajos (jobs).
+ * Proporciona herramientas de filtrado multidimensional, paginación de resultados
+ * y un sistema de auto-refresco para monitoreo en tiempo real.
+ */
 @Component({
   selector: 'app-monitor',
+  standalone: true,
   imports: [CommonModule, LucideAngularModule, FormsModule],
   templateUrl: './monitor.html',
   styleUrls: ['./monitor.css'],
 })
 export class Monitor implements OnInit, OnDestroy {
 
-  /** * Referencias de iconos para uso en el template HTML.
-   */
+  // --- ICONOS (LUCIDE) ---
+  // Referencias para renderizado dinámico en el template HTML
   readonly Activity = Activity;
   readonly RefreshCw = RefreshCw;
   readonly Search = Search;
@@ -35,54 +42,64 @@ export class Monitor implements OnInit, OnDestroy {
   readonly ChevronRightIcon = ChevronRightIcon;
   readonly ChevronLeftIcon = ChevronLeftIcon;
 
-  /** * Listado de trabajos (jobs) y datos filtrados.
-   */
-  jobs: any[] = [];           // Lista completa de trabajos desde el servidor
-  filteredJobs: any[] = [];   // Lista de trabajos tras aplicar filtros
+  // --- VARIABLES DE DATOS ---
+  /** Set de datos completo proveniente del servidor */
+  jobs: any[] = []; 
+  /** Set de datos procesado tras aplicar filtros de búsqueda */
+  filteredJobs: any[] = []; 
 
-  /** * Estado de la interfaz de usuario (UI).
-   */
+  // --- ESTADOS DE LA INTERFAZ (UI) ---
+  /** Indica si hay una petición HTTP en proceso */
   isLoading = false;
+  /** Controla si el polling de actualización automática está activo */
   autoRefresh = false;
+  /** Marca de tiempo de la última sincronización con el servidor */
   lastUpdate: Date = new Date();
+  /** Referencia al timer de JS para limpieza en la destrucción del componente */
   private refreshInterval: any;
 
-  /** * Propiedades de filtrado y paginación.
-   */
+  // --- PROPIEDADES DE FILTRADO ---
   filterFrom: string = '';
   filterTo: string = '';
   filterDuration: string = '';
   filterStatus: string = '';
   filterModel: string = '';
   filterMode: string = '';
+  /** Lista dinámica de modelos extraída de los jobs para el selector de la UI */
   availableModels: string[] = [];
   
+  // --- PAGINACIÓN ---
   page = 0;
   pageSize = 2;
-  Math = Math; // Utilidad para cálculos en el template
+  /** Exposición de Math para cálculos matemáticos directos en el HTML */
+  Math = Math; 
 
   constructor(private crudService: CRUD) { }
 
   /**
-   * Inicializa el componente cargando los datos y configurando el intervalo de refresco.
+   * Ciclo de vida: Inicializa el componente.
+   * Carga los datos iniciales y configura el intervalo de refresco automático.
    */
   ngOnInit(): void {
     this.refreshJobs();
 
+    // Configura un intervalo de 10 minutos para la actualización en segundo plano
     this.refreshInterval = setInterval(() => {
       if (this.autoRefresh) this.refreshJobs();
-    }, 10 * 60 * 1000); // Refresco cada 10 minutos
+    }, 10 * 60 * 1000); 
   }
 
   /**
-   * Limpia los recursos y detiene el intervalo de refresco al destruir el componente.
+   * Ciclo de vida: Limpieza.
+   * Asegura que el intervalo de refresco se detenga para evitar fugas de memoria.
    */
   ngOnDestroy(): void {
     if (this.refreshInterval) clearInterval(this.refreshInterval);
   }
 
-  /**
-   * Obtiene el subconjunto de trabajos para mostrar según la paginación actual.
+  // --- GETTERS DE PRESENTACIÓN ---
+
+  /** * Retorna la porción de datos correspondiente a la página actual.
    */
   get pagedJobs() {
     const start = this.page * this.pageSize;
@@ -90,22 +107,24 @@ export class Monitor implements OnInit, OnDestroy {
     return this.filteredJobs.slice(start, end);
   }
 
-  /**
-   * Obtiene el total de páginas basado en los resultados filtrados.
+  /** * Calcula el número total de páginas según los filtros aplicados.
    */
   get totalPages() {
     return Math.ceil(this.filteredJobs.length / this.pageSize);
   }
 
+  // --- MÉTODOS DE COMUNICACIÓN CON EL SERVICIO ---
+
   /**
-   * Solicita al servicio la actualización de la lista de tráfico/trabajos.
+   * Obtiene el historial de tráfico desde el API.
+   * Al recibir los datos, dispara automáticamente la lógica de filtrado.
    */
   refreshJobs(): void {
     this.isLoading = true;
     this.crudService.getTrafficHistory().subscribe({
       next: (data: any[]) => {
         this.jobs = data;
-        this.applyFilters(); // Sincroniza la lista filtrada tras la carga
+        this.applyFilters(); 
         this.isLoading = false;
         this.lastUpdate = new Date();
       },
@@ -117,20 +136,22 @@ export class Monitor implements OnInit, OnDestroy {
     });
   }
 
+  // --- LÓGICA DE FILTRADO Y PROCESAMIENTO ---
+
   /**
-   * Ejecuta la lógica de filtrado multidimensional (Status, Duración, Modelo, Modo).
-   * También actualiza la lista de modelos disponibles dinámicamente.
+   * Aplica filtros cruzados (Status, Duración, Modelo y Modo).
+   * Además, regenera la lista de modelos únicos disponibles para el dropdown.
    */
   applyFilters(): void {
     this.page = 0;
 
-    // 1. Extraer modelos únicos para los selectores de la UI
+    // 1. Extraer modelos únicos presentes en los datos para alimentar el filtro de la UI
     const models = this.jobs
       .map(j => j.result?.model_folder)
       .filter((val, index, self) => val && self.indexOf(val) === index);
     this.availableModels = models.sort();
 
-    // 2. Aplicar criterios de filtrado
+    // 2. Ejecución del filtrado multicriterio
     this.filteredJobs = this.jobs.filter(job => {
       const matchDuration = !this.filterDuration || job.duration_category === this.filterDuration;
       const matchStatus = !this.filterStatus || job.status === this.filterStatus;
@@ -142,7 +163,8 @@ export class Monitor implements OnInit, OnDestroy {
   }
 
   /**
-   * Filtra la lista actual basándose en un rango de fechas de creación.
+   * Realiza un filtrado específico basado en el rango temporal (created_at).
+   * Resetea la paginación a la primera página.
    */
   onFilter(): void {
     this.page = 0; 
@@ -160,7 +182,7 @@ export class Monitor implements OnInit, OnDestroy {
   }
 
   /**
-   * Restablece los filtros de fecha y restaura la lista completa.
+   * Limpia los inputs de fecha y restaura la vista de todos los trabajos.
    */
   clearFilters(): void {
     this.filterFrom = '';
@@ -169,30 +191,20 @@ export class Monitor implements OnInit, OnDestroy {
     this.page = 0;
   }
 
-  /**
-   * Avanza a la siguiente página de la lista.
-   */
+  // --- NAVEGACIÓN DE PAGINACIÓN ---
+
+  /** Incrementa el índice de página si hay resultados siguientes */
   nextPage(): void {
     if ((this.page + 1) * this.pageSize < this.filteredJobs.length) {
       this.page++;
     }
   }
 
-  /**
-   * Retrocede a la página anterior de la lista.
-   */
+  /** Decrementa el índice de página si no se está en el inicio */
   prevPage(): void {
     if (this.page > 0) {
       this.page--;
     }
   }
 
-  /**
-   * Gestiona la visualización de detalles de un trabajo específico.
-   * @param job El objeto del trabajo a inspeccionar.
-   */
-  viewDetails(job: any): void {
-    console.log('Mostrando detalles de:', job.job_id);
-    // Implementar navegación o apertura de modal aquí
-  }
 }

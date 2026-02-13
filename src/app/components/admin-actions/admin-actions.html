@@ -3,98 +3,110 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-destructive"><path d="m12 14 4-4-4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-destructive">
+          <path d="m12 14 4-4-4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>
+        </svg>
       </div>
       <div>
         <h2 class="text-lg font-semibold tracking-tight">Comandos Administrativos</h2>
         <p class="text-sm text-slate-500">Acciones de control del servidor VPN</p>
       </div>
     </div>
-    
-    <!--
-    <div class="flex items-center gap-2 px-3 py-1 bg-slate-900/50 border border-slate-800 rounded-full">
-      <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sistema Activo</span>
-    </div>
-    -->
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-    <button
-      *ngFor="let command of commands"
-      (click)="selectCommand(command)"
-      [ngClass]="command.dangerous 
-        ? 'border-destructive/20 bg-destructive/5 hover:bg-destructive/10 hover:border-destructive/40' 
-        : 'border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700'"
-      class="p-4 rounded-xl border transition-all duration-200 active:scale-95 group text-left"
-    >
-      <div class="flex items-start gap-3">
-        <div
-          class="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-          [ngClass]="command.dangerous ? 'bg-destructive/20 text-destructive' : 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20'"
-        >
-          <i-lucide [img]="Settings" class="w-4 h-4" *ngIf="!command.dangerous"></i-lucide>
-          <i-lucide [img]="AlertTriangle" class="w-4 h-4" *ngIf="command.dangerous"></i-lucide>
-          <span *ngIf="!command.icon && !command.dangerous">⚙️</span>
+    @for (command of commands; track command.id) {
+      @let isDangerous = command.dangerous;
+
+      <button
+        (click)="selectCommand(command)"
+        class="p-4 rounded-xl border transition-all duration-200 active:scale-95 group text-left"
+        [class]="isDangerous 
+          ? 'border-destructive/20 bg-destructive/5 hover:bg-destructive/10 hover:border-destructive/40' 
+          : 'border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700'"
+      >
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
+               [class]="isDangerous ? 'bg-destructive/20 text-destructive' : 'bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20'">
+            
+            @if (isDangerous) {
+              <i-lucide [img]="AlertTriangle" class="w-4 h-4"></i-lucide>
+            } @else if (command.icon) {
+              <i-lucide [img]="Settings" class="w-4 h-4"></i-lucide>
+            } @else {
+              <span>⚙️</span>
+            }
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-sm tracking-wide text-slate-200">{{ command.name }}</h3>
+            <p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+              {{ command.description }}
+            </p>
+          </div>
         </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-sm tracking-wide text-slate-200">{{ command.name }}</h3>
-          <p class="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-            {{ command.description }}
-          </p>
-        </div>
-      </div>
-    </button>
+      </button>
+    }
   </div>
 
-  <div
-    *ngIf="lastResult"
-    [ngClass]="lastResult.success ? 'bg-success/5 border-success/20 text-success' : 'bg-destructive/5 border-destructive/20 text-destructive'"
-    class="flex items-start gap-4 p-4 rounded-lg border animate-in slide-in-from-bottom-2"
-  >
-    <div class="mt-0.5">
-      <i-lucide [img]="lastResult.success ? CheckCircle : AlertCircle" class="w-5 h-5"></i-lucide>
-    </div>
-    <div class="flex-1">
-      <p class="text-sm font-semibold tracking-wide">{{ lastResult.message }}</p>
-      <p class="text-[10px] opacity-70 mt-1 uppercase tracking-widest">
-        {{ lastResult.timestamp | date:'shortTime' }} — Registro de sistema
-      </p>
-    </div>
-    <button (click)="closeResult()" class="text-xs font-bold uppercase hover:underline opacity-50 hover:opacity-100 transition-opacity">
-      Cerrar
-    </button>
-  </div>
+  @if (lastResult) {
+    @let isSuccess = lastResult.success;
 
-  <div *ngIf="selectedCommand" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl max-w-md w-full shadow-2xl">
-      <div class="flex items-center gap-3 mb-4">
-        <div [ngClass]="selectedCommand.dangerous ? 'bg-destructive/20 text-destructive' : 'bg-blue-500/20 text-blue-400'" class="p-2 rounded-lg">
-          <i-lucide [img]="Zap" class="w-5 h-5"></i-lucide>
-        </div>
-        <h3 class="text-xl font-bold tracking-tight text-slate-100">Confirmar Acción</h3>
+    <div class="flex items-start gap-4 p-4 rounded-lg border animate-in slide-in-from-bottom-2"
+         [class]="isSuccess ? 'bg-success/5 border-success/20 text-success' : 'bg-destructive/5 border-destructive/20 text-destructive'">
+      
+      <div class="mt-0.5">
+        <i-lucide [img]="isSuccess ? CheckCircle : AlertCircle" class="w-5 h-5"></i-lucide>
       </div>
-      
-      <p class="text-sm text-slate-400 mb-8 leading-relaxed">
-        Estás a punto de ejecutar <span class="text-slate-100 font-mono bg-slate-800 px-1.5 py-0.5 rounded">{{ selectedCommand.name }}</span>. 
-        {{ selectedCommand.description }}
-      </p>
-      
-      <div class="flex gap-3">
-        <button 
-          (click)="cancelCommand()" 
-          [disabled]="isExecuting"
-          class="flex-1 px-4 py-2.5 text-xs font-bold uppercase tracking-widest border border-slate-700 rounded-lg hover:bg-slate-800 text-slate-300 transition-all disabled:opacity-50">
-          Cancelar
-        </button>
-        <button 
-          (click)="handleExecute()" 
-          [disabled]="isExecuting"
-          [ngClass]="selectedCommand.dangerous ? 'bg-destructive text-white hover:bg-destructive/90' : 'bg-blue-600 text-white hover:bg-blue-500'"
-          class="flex-1 px-4 py-2.5 text-xs font-bold uppercase tracking-widest rounded-lg shadow-lg shadow-blue-900/20 transition-all disabled:opacity-50 active:scale-95">
-          {{ isExecuting ? 'Procesando...' : 'Ejecutar ahora' }}
-        </button>
+
+      <div class="flex-1">
+        <p class="text-sm font-semibold tracking-wide">{{ lastResult.message }}</p>
+        <p class="text-[10px] opacity-70 mt-1 uppercase tracking-widest">
+          {{ lastResult.timestamp | date:'shortTime' }} — Registro de sistema
+        </p>
+      </div>
+
+      <button (click)="closeResult()" class="text-xs font-bold uppercase hover:underline opacity-50 hover:opacity-100 transition-opacity">
+        Cerrar
+      </button>
+    </div>
+  }
+
+  @if (selectedCommand) {
+    @let cmd = selectedCommand;
+
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+      <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl max-w-md w-full shadow-2xl">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="p-2 rounded-lg"
+               [class]="cmd.dangerous ? 'bg-destructive/20 text-destructive' : 'bg-blue-500/20 text-blue-400'">
+            <i-lucide [img]="Zap" class="w-5 h-5"></i-lucide>
+          </div>
+          <h3 class="text-xl font-bold tracking-tight text-slate-100">Confirmar Acción</h3>
+        </div>
+        
+        <p class="text-sm text-slate-400 mb-8 leading-relaxed">
+          Estás a punto de ejecutar <span class="text-slate-100 font-mono bg-slate-800 px-1.5 py-0.5 rounded">{{ cmd.name }}</span>. 
+          {{ cmd.description }}
+        </p>
+        
+        <div class="flex gap-3">
+          <button 
+            (click)="cancelCommand()" 
+            [disabled]="isExecuting"
+            class="flex-1 px-4 py-2.5 text-xs font-bold uppercase tracking-widest border border-slate-700 rounded-lg hover:bg-slate-800 text-slate-300 transition-all disabled:opacity-50">
+            Cancelar
+          </button>
+          
+          <button 
+            (click)="handleExecute()" 
+            [disabled]="isExecuting"
+            class="flex-1 px-4 py-2.5 text-xs font-bold uppercase tracking-widest rounded-lg shadow-lg transition-all disabled:opacity-50 active:scale-95"
+            [class]="cmd.dangerous ? 'bg-destructive text-white hover:bg-destructive/90' : 'bg-blue-600 text-white hover:bg-blue-500'">
+            {{ isExecuting ? 'Procesando...' : 'Ejecutar ahora' }}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  }
 </div>
