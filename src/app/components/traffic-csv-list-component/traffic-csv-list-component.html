@@ -155,10 +155,9 @@
 
 
 
-              <button class="p-1.5 rounded-md transition-colors text-blue-400" [ngClass]="{
-    'hover:bg-slate-700 cursor-pointer': file.csvStatus === 'true',
-    'opacity-40 cursor-not-allowed': file.csvStatus !== 'true'
-  }" [disabled]="file.csvStatus !== 'true'" (click)="file.csvStatus === 'true' && handleDownload(file.csvPath)"
+              <button class="p-1.5 rounded-md transition-colors text-blue-400"
+                [ngClass]="{'hover:bg-slate-700 cursor-pointer': file.csvStatus === 'true', 'opacity-40 cursor-not-allowed': file.csvStatus !== 'true'}"
+                [disabled]="file.csvStatus !== 'true'" (click)="file.csvStatus === 'true' && openReviewModal(file)"
                 title="Analizar">
                 <i-lucide [img]="SearchCode" class="w-4 h-4"></i-lucide>
               </button>
@@ -208,6 +207,67 @@
           Siguiente
           <i-lucide [img]="ChevronRightIcon" class="w-4 h-4"></i-lucide>
         </button>
+      </div>
+    </div>
+  </div>
+  }
+  @if (showModelModal) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm animate-fade-in" (click)="showModelModal = false">
+    </div>
+
+    <div
+      class="relative bg-[#0b0e14] border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div class="p-6">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+            <i-lucide [img]="Activity" class="w-5 h-5 text-blue-400"></i-lucide>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-100">Configurar Análisis</h3>
+            <p class="text-xs text-slate-400">Selecciona el modelo de IA para procesar el archivo</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">Modelo de
+              entrenamiento</label>
+            <div class="relative">
+              <select [(ngModel)]="selectedModel"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:ring-2 focus:ring-blue-500/50 outline-none appearance-none transition-all cursor-pointer">
+
+                @for (model of trainingQueue; track model.id) {
+                <option [value]="model.folder_name">
+                  {{ model.folder_name }} — (Modo: {{ model.mode }})
+                </option>
+                }
+
+                @if (trainingQueue.length === 0) {
+                <option disabled selected>No se encontraron modelos disponibles</option>
+                }
+              </select>
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                <i-lucide [img]="ChevronRightIcon" class="w-4 h-4 rotate-90"></i-lucide>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3 text-xs text-slate-400 italic">
+            Archivo: <span class="text-blue-300 font-mono">{{ selectedFileForReview?.name }}</span>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-8">
+          <button (click)="showModelModal = false"
+            class="flex-1 px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm font-semibold transition-all">
+            Cancelar
+          </button>
+          <button (click)="confirmReview()" [disabled]="!selectedModel"
+            class="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all shadow-lg shadow-blue-900/40 disabled:opacity-50">
+            Iniciar Revisión
+          </button>
+        </div>
       </div>
     </div>
   </div>

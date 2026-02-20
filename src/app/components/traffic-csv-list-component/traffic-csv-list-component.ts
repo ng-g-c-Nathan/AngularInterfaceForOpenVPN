@@ -71,6 +71,11 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   filterFrom: string = '';
   /** Fecha final para el filtro de rango */
   filterTo: string = '';
+  /* Variables para el Modal */
+  showModelModal = false;
+  selectedFileForReview: any = null;
+  trainingQueue: any[] = [];
+  selectedModel: string = '';
 
   constructor(
     private crudService: CRUD,
@@ -84,7 +89,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     this.fetchFiles();
-
+    this.loadTrainingModels();
     if (this.autoRefresh) {
       // Configura el intervalo de refresco cada 10 minutos
       setInterval(() => this.fetchFiles(), 10 * 60 * 1000);
@@ -217,27 +222,77 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Envía el archivo seleccionado al servicio de scoring de tráfico.
-   * Muestra un mensaje de éxito temporal y gestiona errores de procesamiento.
-   * @param csvPath Ruta del archivo para analizar.
-   */
-  handleDownload(csvPath: string): void {
-    console.log('Enviando a revisión:', csvPath);
 
-    this.crudService.scoreTraffic(csvPath).subscribe({
-      next: (res) => {
+/**
+   * Carga los modelos de entrenamiento disponibles consultando el log de entrenamiento.
+   * * Transforma el objeto de respuesta de la API en un array manejable, filtra 
+   * únicamente los modelos cuyo estado es 'done' y los ordena de forma descendente 
+   * (del más reciente al más antiguo). Por defecto, selecciona el primer modelo de la lista.
+   * * @returns {void}
+   */
+  loadTrainingModels(): void {
+    this.crudService.getTrainingLog().subscribe((resp: any) => {
+      // Extraemos las llaves y mapeamos
+      this.trainingQueue = Object.keys(resp)
+        .map(key => {
+          const item = resp[key];
+          return {
+            id: key,
+            folder_name: item.folder_name,
+            status: item.status,
+            mode: item.mode
+          };
+        })
+        .filter(m => m.status === 'done')
+        .reverse();
+
+      // Seleccionar el primero por defecto (generalmente el más reciente)
+      if (this.trainingQueue.length > 0) {
+        this.selectedModel = this.trainingQueue[0].folder_name;
+      }
+
+      this.cdr.detectChanges();
+    });
+  }
+
+  /**
+   * Prepara y visualiza la interfaz modal para iniciar la revisión de un archivo.
+   * * Almacena temporalmente el archivo seleccionado y asegura que, al abrir la 
+   * interfaz, exista un modelo de entrenamiento preseleccionado de la cola disponible.
+   * * @param {any} file - El objeto del archivo CSV que se desea enviar a revisión.
+   * @returns {void}
+   */
+  openReviewModal(file: any): void {
+    this.selectedFileForReview = file;
+    this.showModelModal = true;
+    // Seleccionar el primero por defecto si existe
+    if (this.trainingQueue.length > 0) {
+      this.selectedModel = this.trainingQueue[0].folder_name;
+    }
+  }
+
+  /**
+   * Ejecuta la petición definitiva de análisis (scoring) del tráfico.
+   * * Valida la selección del modelo y el archivo, cierra el modal y consume el 
+   * servicio de scoring. Tras una respuesta exitosa, muestra un mensaje de 
+   * confirmación temporal al usuario durante 5 segundos.
+   * * @returns {void}
+   */
+  confirmReview(): void {
+    if (!this.selectedModel || !this.selectedFileForReview) return;
+
+    this.showModelModal = false;
+    const csvPath = this.selectedFileForReview.csvPath;
+    console.log(csvPath, this.selectedModel)
+    this.crudService.scoreTraffic(csvPath, this.selectedModel).subscribe({
+      next: () => {
         this.showReviewMessage = true;
-        // Ocultar notificación de éxito tras 5 segundos
         setTimeout(() => {
           this.showReviewMessage = false;
           this.cdr.detectChanges();
         }, 5000);
       },
-      error: (err) => {
-        console.error('Error al enviar a revisión', err);
-        alert('Hubo un error al procesar la solicitud');
-      }
+      error: (err) => alert('Error al procesar la solicitud')
     });
   }
 }
