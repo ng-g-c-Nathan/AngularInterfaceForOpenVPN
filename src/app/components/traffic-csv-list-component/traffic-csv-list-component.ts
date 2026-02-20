@@ -8,9 +8,9 @@ import { Router, RouterModule } from '@angular/router';
 import { CRUD } from '../../service/Crud/crud';
 import { LucideAngularModule } from 'lucide-angular';
 import {
-  X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon, Trash2, Search,
-  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, ChevronRightIcon, SearchCode,
-  BarChart3, FileText, FolderOpen, Clock, Settings, RefreshCw, Eye, Download
+  X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon, Trash2, Search, Check, Database, Cpu,
+  ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, ChevronRightIcon, SearchCode, Zap,
+  BarChart3, FileText, FolderOpen, Clock, Settings, RefreshCw, Eye, Download, Calendar
 } from 'lucide-angular';
 
 /**
@@ -38,11 +38,16 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   readonly FileText = FileText;
   readonly RefreshCw = RefreshCw;
   readonly Eye = Eye;
+  readonly Check = Check;
+  readonly Cpu = Cpu;
   readonly Trash2 = Trash2;
   readonly Download = Download;
+  readonly Zap = Zap;
+  readonly Database = Database;
   readonly ChevronLeftIcon = ChevronLeftIcon;
   readonly ChevronRightIcon = ChevronRightIcon;
   readonly Activity = Activity;
+  readonly Calendar = Calendar;
   readonly SearchCode = SearchCode;
   readonly Search = Search;
 
@@ -223,13 +228,13 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   }
 
 
-/**
-   * Carga los modelos de entrenamiento disponibles consultando el log de entrenamiento.
-   * * Transforma el objeto de respuesta de la API en un array manejable, filtra 
-   * únicamente los modelos cuyo estado es 'done' y los ordena de forma descendente 
-   * (del más reciente al más antiguo). Por defecto, selecciona el primer modelo de la lista.
-   * * @returns {void}
-   */
+  /**
+     * Carga los modelos de entrenamiento disponibles consultando el log de entrenamiento.
+     * * Transforma el objeto de respuesta de la API en un array manejable, filtra 
+     * únicamente los modelos cuyo estado es 'done' y los ordena de forma descendente 
+     * (del más reciente al más antiguo). Por defecto, selecciona el primer modelo de la lista.
+     * * @returns {void}
+     */
   loadTrainingModels(): void {
     this.crudService.getTrainingLog().subscribe((resp: any) => {
       // Extraemos las llaves y mapeamos
@@ -240,7 +245,11 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
             id: key,
             folder_name: item.folder_name,
             status: item.status,
-            mode: item.mode
+            mode: item.mode,
+            num_rows: item.num_rows || 0,
+            elapsed_sec: item.elapsed_sec || 0,
+            started_at: item.started_at,
+            n_features: item.n_features
           };
         })
         .filter(m => m.status === 'done')
