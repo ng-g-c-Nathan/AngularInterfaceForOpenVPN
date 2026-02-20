@@ -283,7 +283,6 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
 
     this.showModelModal = false;
     const csvPath = this.selectedFileForReview.csvPath;
-    console.log(csvPath, this.selectedModel)
     this.crudService.scoreTraffic(csvPath, this.selectedModel).subscribe({
       next: () => {
         this.showReviewMessage = true;
