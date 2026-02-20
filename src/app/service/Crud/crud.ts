@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
 })
 export class CRUD {
   /** URL base del servidor API (Cambiar según el entorno de red) */
-  private API = 'http://192.168.0.110:8080/api';
+  private API = 'http://192.168.0.167:8080/api';
 
   constructor(private clienteHttp: HttpClient) { }
 
@@ -79,10 +79,6 @@ export class CRUD {
    * @param filename Nombre del archivo a procesar por la IA.
    */
   scoreTraffic(filename: string, modelName: string): Observable<any> {
-    console.log(`${this.API}/traffic/score`, {
-    CSVFILE: filename,
-    range: modelName 
-  });
   return this.clienteHttp.post(`${this.API}/traffic/score`, {
     CSVFILE: filename,
     range: modelName 
