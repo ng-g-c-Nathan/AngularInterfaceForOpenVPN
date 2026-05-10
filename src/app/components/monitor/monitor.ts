@@ -2,15 +2,15 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CRUD } from '../../service/Crud/crud';
 import { FormsModule } from '@angular/forms';
-import { 
-  LucideAngularModule, Search, Trash2, Activity, SearchCode, Calendar, 
-  ChevronLeftIcon, ChevronRightIcon, RefreshCw, Clock, Database, Cpu, 
-  Box, Layers, Eye, CheckCircle, AlertCircle 
+import {
+  LucideAngularModule, Search, Trash2, Activity, SearchCode, Calendar,
+  ChevronLeftIcon, ChevronRightIcon, RefreshCw, Clock, Database, Cpu,
+  Box, Layers, Eye, CheckCircle, AlertCircle
 } from 'lucide-angular';
 
 /**
  * Componente Monitor
- * * Se encarga de la visualización y seguimiento del historial de tráfico y trabajos (jobs).
+ * Se encarga de la visualización y seguimiento del historial de tráfico y trabajos (jobs).
  * Proporciona herramientas de filtrado multidimensional, paginación de resultados
  * y un sistema de auto-refresco para monitoreo en tiempo real.
  */
@@ -24,7 +24,6 @@ import {
 export class Monitor implements OnInit, OnDestroy {
 
   // --- ICONOS (LUCIDE) ---
-  // Referencias para renderizado dinámico en el template HTML
   readonly Activity = Activity;
   readonly RefreshCw = RefreshCw;
   readonly Search = Search;
@@ -43,19 +42,13 @@ export class Monitor implements OnInit, OnDestroy {
   readonly ChevronLeftIcon = ChevronLeftIcon;
 
   // --- VARIABLES DE DATOS ---
-  /** Set de datos completo proveniente del servidor */
-  jobs: any[] = []; 
-  /** Set de datos procesado tras aplicar filtros de búsqueda */
-  filteredJobs: any[] = []; 
+  jobs: any[] = [];
+  filteredJobs: any[] = [];
 
   // --- ESTADOS DE LA INTERFAZ (UI) ---
-  /** Indica si hay una petición HTTP en proceso */
   isLoading = false;
-  /** Controla si el polling de actualización automática está activo */
   autoRefresh = false;
-  /** Marca de tiempo de la última sincronización con el servidor */
   lastUpdate: Date = new Date();
-  /** Referencia al timer de JS para limpieza en la destrucción del componente */
   private refreshInterval: any;
 
   // --- PROPIEDADES DE FILTRADO ---
@@ -65,146 +58,118 @@ export class Monitor implements OnInit, OnDestroy {
   filterStatus: string = '';
   filterModel: string = '';
   filterMode: string = '';
-  /** Lista dinámica de modelos extraída de los jobs para el selector de la UI */
   availableModels: string[] = [];
-  
+
   // --- PAGINACIÓN ---
   page = 0;
   pageSize = 2;
-  /** Exposición de Math para cálculos matemáticos directos en el HTML */
-  Math = Math; 
+  Math = Math;
+
+  selectedJobId: string | null = null;
 
   constructor(private crudService: CRUD) { }
 
-  /**
-   * Ciclo de vida: Inicializa el componente.
-   * Carga los datos iniciales y configura el intervalo de refresco automático.
-   */
   ngOnInit(): void {
     this.refreshJobs();
-
-    // Configura un intervalo de 10 minutos para la actualización en segundo plano
     this.refreshInterval = setInterval(() => {
       if (this.autoRefresh) this.refreshJobs();
-    }, 10 * 60 * 1000); 
+    }, 10 * 60 * 1000);
   }
 
-  /**
-   * Ciclo de vida: Limpieza.
-   * Asegura que el intervalo de refresco se detenga para evitar fugas de memoria.
-   */
   ngOnDestroy(): void {
     if (this.refreshInterval) clearInterval(this.refreshInterval);
   }
 
   // --- GETTERS DE PRESENTACIÓN ---
 
-  /** * Retorna la porción de datos correspondiente a la página actual.
-   */
   get pagedJobs() {
     const start = this.page * this.pageSize;
-    const end = start + this.pageSize;
-    return this.filteredJobs.slice(start, end);
+    return this.filteredJobs.slice(start, start + this.pageSize);
   }
 
-  /** * Calcula el número total de páginas según los filtros aplicados.
-   */
   get totalPages() {
     return Math.ceil(this.filteredJobs.length / this.pageSize);
   }
 
-  // --- MÉTODOS DE COMUNICACIÓN CON EL SERVICIO ---
+  // --- COMUNICACIÓN CON EL SERVICIO ---
 
-  /**
-   * Obtiene el historial de tráfico desde el API.
-   * Al recibir los datos, dispara automáticamente la lógica de filtrado.
-   */
   refreshJobs(): void {
     this.isLoading = true;
     this.crudService.getTrafficHistory().subscribe({
       next: (data: any[]) => {
         this.jobs = data;
-        this.applyFilters(); 
+        this.applyFilters();
         this.isLoading = false;
         this.lastUpdate = new Date();
       },
-      error: (err) => {
-        console.error('Error al actualizar jobs:', err);
+      error: () => {
         this.isLoading = false;
         this.jobs = [];
       }
     });
   }
 
-  // --- LÓGICA DE FILTRADO Y PROCESAMIENTO ---
+  // --- FILTRADO UNIFICADO ---
 
   /**
-   * Aplica filtros cruzados (Status, Duración, Modelo y Modo).
-   * Además, regenera la lista de modelos únicos disponibles para el dropdown.
+   * Aplica TODOS los filtros en una sola pasada:
+   * status, duración, modelo, modo y rango de fechas.
+   * Anteriormente onFilter() y applyFilters() se sobreescribían entre sí.
    */
   applyFilters(): void {
     this.page = 0;
 
-    // 1. Extraer modelos únicos presentes en los datos para alimentar el filtro de la UI
-    const models = this.jobs
-      .map(j => j.result?.model_folder)
-      .filter((val, index, self) => val && self.indexOf(val) === index);
-    this.availableModels = models.sort();
-
-    // 2. Ejecución del filtrado multicriterio
+    // Modelos únicos para el dropdown
+    this.availableModels = [...new Set(
+      this.jobs
+        .map(j => j.result?.model_folder)
+        .filter(Boolean)
+    )].sort();
     this.filteredJobs = this.jobs.filter(job => {
       const matchDuration = !this.filterDuration || job.duration_category === this.filterDuration;
-      const matchStatus = !this.filterStatus || job.status === this.filterStatus;
-      const matchModel = !this.filterModel || job.result?.model_folder === this.filterModel;
-      const matchMode = !this.filterMode || job.result?.mode === this.filterMode;
+      const matchStatus   = !this.filterStatus   || job.status === this.filterStatus;
+      const matchModel    = !this.filterModel    || job.result?.model_folder === this.filterModel;
+      const matchMode     = !this.filterMode     || job.result?.mode === this.filterMode;
 
-      return matchDuration && matchStatus && matchModel && matchMode;
+      const jobTime = new Date(job.created_at).getTime();
+      const from    = this.filterFrom ? new Date(this.filterFrom).getTime() : 0;
+      const to      = this.filterTo   ? new Date(this.filterTo).getTime()   : Infinity;
+      const matchDate = jobTime >= from && jobTime <= to;
+
+      return matchDuration && matchStatus && matchModel && matchMode && matchDate;
     });
   }
 
-  /**
-   * Realiza un filtrado específico basado en el rango temporal (created_at).
-   * Resetea la paginación a la primera página.
-   */
-  onFilter(): void {
-    this.page = 0; 
-    if (!this.filterFrom && !this.filterTo) {
-      this.filteredJobs = [...this.jobs];
-      return;
-    }
-
-    this.filteredJobs = this.jobs.filter(job => {
-      const jobDate = new Date(job.created_at).getTime();
-      const from = this.filterFrom ? new Date(this.filterFrom).getTime() : 0;
-      const to = this.filterTo ? new Date(this.filterTo).getTime() : Infinity;
-      return jobDate >= from && jobDate <= to;
-    });
-  }
-
-  /**
-   * Limpia los inputs de fecha y restaura la vista de todos los trabajos.
-   */
+  /** Limpia todos los filtros y recalcula */
   clearFilters(): void {
-    this.filterFrom = '';
-    this.filterTo = '';
-    this.filteredJobs = [...this.jobs];
-    this.page = 0;
+    this.filterFrom     = '';
+    this.filterTo       = '';
+    this.filterDuration = '';
+    this.filterStatus   = '';
+    this.filterModel    = '';
+    this.filterMode     = '';
+    this.applyFilters();
   }
 
-  // --- NAVEGACIÓN DE PAGINACIÓN ---
+  // --- PAGINACIÓN ---
 
-  /** Incrementa el índice de página si hay resultados siguientes */
   nextPage(): void {
-    if ((this.page + 1) * this.pageSize < this.filteredJobs.length) {
-      this.page++;
-    }
+    if ((this.page + 1) * this.pageSize < this.filteredJobs.length) this.page++;
   }
 
-  /** Decrementa el índice de página si no se está en el inicio */
   prevPage(): void {
-    if (this.page > 0) {
-      this.page--;
-    }
+    if (this.page > 0) this.page--;
   }
 
+  // --- DETALLE DE JOB ---
+
+  toggleJob(jobId: string) {
+    this.selectedJobId = this.selectedJobId === jobId ? null : jobId;
+  }
+
+  getRiskLevel(ratio: number): 'safe' | 'warning' | 'danger' {
+    if (ratio < 0.10) return 'safe';
+    if (ratio < 0.25) return 'warning';
+    return 'danger';
+  }
 }

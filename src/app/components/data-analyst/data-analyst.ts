@@ -91,6 +91,7 @@ export class DataAnalyst implements OnInit {
    */
   loadModelsInfo() {
     this.crud.getModelsInfo().subscribe((resp: any[]) => {
+      console.log(resp)
       this.trainedModels = resp;
     });
   }
@@ -131,18 +132,19 @@ export class DataAnalyst implements OnInit {
    */
   private mapPhases(phasesObj: any) {
     const allPhases = [
-      { key: 'inicio', label: 'Inicio' },
+      { key: 'inicio',       label: 'Inicio' },
       { key: 'preprocessor', label: 'Preprocessor' },
-      { key: 'transform', label: 'Transform' },
-      { key: 'kmeans', label: 'KMeans' },
-      { key: 'isoforest', label: 'Isoforest' }
+      { key: 'transform',    label: 'Transform' },
+      { key: 'pca',          label: 'PCA' },
+      { key: 'kmeans',       label: 'KMeans' },
+      { key: 'isoforest',    label: 'Isoforest' },
     ];
 
     return allPhases.map(phase => {
       const serverPhase = phasesObj ? phasesObj[phase.key] : null;
       return {
-        name: phase.label,
-        status: serverPhase ? serverPhase.status : 'pending',
+        name:     phase.label,
+        status:   serverPhase ? serverPhase.status : 'pending',
         time_sec: serverPhase ? serverPhase.time_sec : 0
       };
     });
@@ -169,7 +171,7 @@ export class DataAnalyst implements OnInit {
   /** Inicializa el rango de fechas a vacío y abre el modal para procesar todo el dataset */
   trainAllData() {
     this.trainRange = { start: '', end: '' }; 
-    console.log("Iniciando entrenamiento global (Sin rango de fechas)");
+   // console.log("Iniciando entrenamiento global (Sin rango de fechas)");
     this.showTrainingModal = true;
   }
 
@@ -189,7 +191,7 @@ export class DataAnalyst implements OnInit {
 
     this.crud.trainModels(this.selectedTrainingEffort, fDate, tDate).subscribe({
       next: (resp) => {
-        console.log('Entrenamiento lanzado con éxito:', resp);
+       // console.log('Entrenamiento lanzado con éxito:', resp);
         
         // Delay visual para confirmar la acción al usuario
         setTimeout(() => {
@@ -205,10 +207,91 @@ export class DataAnalyst implements OnInit {
         }, 800);
       },
       error: (err) => {
-        console.error('Error al lanzar entrenamiento:', err);
+        //console.error('Error al lanzar entrenamiento:', err);
         this.isTraining = false;
         alert('Error al conectar con el servidor de IA');
       }
     });
   }
+
+  /** Helper: devuelve true si hay algún job actualmente en ejecución */
+  get hasRunningJobs(): boolean {
+    return this.trainingQueue.some(job => job.status === 'running');
+  }
+
+  selectedModelId: string | null = null;
+  
+/**
+ * @method getKmeansScore
+ * Calcula el score 0-100 del modelo K-Means basado en silhouette y gap.
+ */
+getKmeansScore(km: any): number {
+  if (!km) return 0;
+
+  // Silhouette score base (0-1 → 0-100)
+  let score = km.silhouette_train * 100;
+
+  // Penalización por gap entre train y val
+  if (km.silhouette_gap > 0.10) score -= 20;
+  else if (km.silhouette_gap > 0.05) score -= 10;
+
+  // Penalización si inercia val es mucho mayor que train
+  if (km.inertia_gap_pct > 200 && km.silhouette_gap > 0.10) score -= 15;
+
+  return Math.round(Math.max(0, Math.min(100, score)));
+}
+
+/**
+ * @method getIsoScore
+ * Calcula el score 0-100 del Isolation Forest basado en gap z-score y anomaly rates.
+ */
+getIsoScore(iso: any): number {
+  if (!iso) return 0;
+
+  let score = 100;
+
+  // Penalización por gap z-score (> 3σ es problema grave)
+  if (iso.gap_zscore > 3)        score -= 40;
+  else if (iso.gap_zscore > 1.5) score -= 20;
+  else if (iso.gap_zscore > 0.8) score -= 10;
+
+  // Penalización si anomaly rate val es muy alta respecto al train
+  if (iso.anomaly_rate_val > iso.anomaly_rate_train * 3 && iso.anomaly_rate_val > 0.10) {
+    score -= 25;
+  }
+
+  // Penalización si mean_score_train está demasiado cerca de 0 (modelo confundido)
+  if (iso.mean_score_train > -0.10) score -= 20;
+
+  return Math.round(Math.max(0, Math.min(100, score)));
+}
+
+/**
+ * @method getModelScore
+ * Devuelve el score combinado del modelo (promedio K-Means + IsoForest).
+ * Retorna null si no hay datos de validación.
+ */
+getModelScore(model: any): number | null {
+  const km  = model.validation?.kmeans;
+  const iso = model.validation?.isoforest;
+  if (!km && !iso) return null;
+
+  const skm  = km  ? this.getKmeansScore(km)  : 0;
+  const siso = iso ? this.getIsoScore(iso)     : 0;
+
+  if (km && iso) return Math.round((skm + siso) / 2);
+  return km ? skm : siso;
+}
+
+/**
+ * @method getDiagType
+ * Interpreta el string de diagnóstico del backend y devuelve 'ok' | 'warn' | 'error'.
+ */
+getDiagType(diagnosis: string): 'ok' | 'warn' | 'error' {
+  if (!diagnosis) return 'warn';
+  const d = diagnosis.toLowerCase();
+  if (d.startsWith('ok'))     return 'ok';
+  if (d.startsWith('warn'))   return 'warn';
+  return 'error';
+}
 }

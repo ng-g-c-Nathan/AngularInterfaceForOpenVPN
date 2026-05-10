@@ -6,7 +6,7 @@ import { take } from 'rxjs/operators';
 import { LucideAngularModule } from 'lucide-angular';
 
 // Importación de iconos para la interfaz de reportes y gráficas
-import { 
+import {
   X, Menu, Activity, GlobeIcon, MenuIcon, ActivityIcon, Trash2, Search,
   ChevronLeftIcon, ShieldCheckIcon, FileIcon, Users, ChevronRightIcon,
   BarChart3, FileText, FolderOpen, Clock, Settings, RefreshCw, Eye, Download
@@ -62,7 +62,7 @@ export class TrafficChart implements OnInit {
   /** Fecha de fin capturada desde el input type="date" */
   filterTo: string = '';
 
-  constructor(private crud: CRUD) {}
+  constructor(private crud: CRUD) { }
 
   /**
    * Ciclo de vida: Inicializa el componente cargando el rango predeterminado.
@@ -119,7 +119,7 @@ export class TrafficChart implements OnInit {
     const from = new Date(this.filterFrom);
     const to = new Date(this.filterTo);
 
-    this.selectedRange = 0; 
+    this.selectedRange = 0;
     this.loadTrafficData(from, to);
   }
 
@@ -150,12 +150,13 @@ export class TrafficChart implements OnInit {
       .pipe(take(1)) // Evita fugas de memoria cerrando la suscripción tras el primer valor
       .subscribe({
         next: (data: any[]) => {
+          console.log(data)
           // Mapeo y normalización de la data para el template
           this.files = data.map(item => ({
             ...item,
             trafficIn: item.totalInput,
             trafficOut: item.totalOutput,
-            date: new Date(item.date) 
+            date: new Date(item.date)
           }));
 
           this.isLoading = false;
@@ -165,5 +166,15 @@ export class TrafficChart implements OnInit {
           this.isLoading = false;
         }
       });
+  }
+
+  get maxTraffic(): number {
+    if (!this.files.length) return 1;
+    return Math.max(...this.files.map(f => Math.max(f.trafficIn || 0, f.trafficOut || 0)));
+  }
+
+  getHeightPercent(value: number): number {
+    if (!this.maxTraffic) return 0;
+    return Math.max((value / this.maxTraffic) * 100, 1);
   }
 }
