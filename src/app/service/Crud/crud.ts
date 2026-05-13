@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
 })
 export class CRUD {
   /** URL base del servidor API (Cambiar según el entorno de red) */
-  private API = 'http://192.168.0.110:8080/api';
+  private API = 'http://localhost:8080/api';
 
   constructor(private clienteHttp: HttpClient) { }
 
