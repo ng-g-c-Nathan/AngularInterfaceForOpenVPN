@@ -97,12 +97,14 @@ export class Monitor implements OnInit, OnDestroy {
     this.isLoading = true;
     this.crudService.getTrafficHistory().subscribe({
       next: (data: any[]) => {
+        console.log("Monitor jeje"+data)
         this.jobs = data;
         this.applyFilters();
         this.isLoading = false;
         this.lastUpdate = new Date();
       },
-      error: () => {
+      error: (e) => {
+        console.log("Error"+e)
         this.isLoading = false;
         this.jobs = [];
       }

@@ -122,7 +122,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          //console.log(data)
+          //console.log("No encontre nada en traffic list"+data)
           this.files = data.map((file: any) => ({
             name: file.name,
             lastModified: new Date(file.lastModified),
