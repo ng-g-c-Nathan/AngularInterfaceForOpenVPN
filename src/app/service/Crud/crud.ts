@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http'; 
 import { Observable } from 'rxjs';
- 
+import { environment } from '../../environments/environment';
 /**
  * Servicio CRUD
  * Proporciona los métodos de comunicación con la API para la gestión de tráfico,
@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
 })
 export class CRUD {
   /** URL base del servidor API (Cambiar según el entorno de red) */
-  private API = 'http://localhost:8080/api';
+  private API = environment.apiUrl;
 
   constructor(private clienteHttp: HttpClient) { }
 
