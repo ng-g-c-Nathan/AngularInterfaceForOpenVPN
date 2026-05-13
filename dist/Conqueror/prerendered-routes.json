@@ -1,0 +1,11 @@
+{
+  "routes": {
+    "/": {},
+    "/admin": {},
+    "/csv": {},
+    "/data": {},
+    "/monitor": {},
+    "/traffic": {},
+    "/traffic-list": {}
+  }
+}
