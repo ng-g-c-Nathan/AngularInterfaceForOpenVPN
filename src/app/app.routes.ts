@@ -8,7 +8,7 @@ import { CsvViewer } from './components/csv-viewer/csv-viewer';
 import { AdminActions } from './components/admin-actions/admin-actions';
 import { DataAnalyst } from './components/data-analyst/data-analyst';
 import { Monitor } from './components/monitor/monitor';
-
+import { Users } from './components/users/users';
 /**
  * @description Definición de las rutas de navegación para la aplicación Conqueror.
  * Este array configura el Router de Angular para mapear las URLs a sus respectivos componentes.
@@ -85,7 +85,15 @@ export const routes: Routes = [
     path: 'csv',
     component: CsvViewer
   },
-
+    /** 
+   * * @path users
+   * @component Users
+   * Herramienta para visualizar los clientes conectados a la VPN
+   */
+  {
+    path: 'users',
+    component: Users
+  },
   /** 
    * * Comodín (Wildcard): Captura cualquier URL no definida.
    * @description Si el usuario ingresa una ruta inexistente, se redirige a la lista de tráfico.

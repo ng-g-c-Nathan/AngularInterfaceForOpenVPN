@@ -134,4 +134,8 @@ export class CRUD {
       { params: { command } }
     );
   }
+
+   getClients(): Observable<any[]> {
+    return this.clienteHttp.get<any[]>(`${this.API}/clients`);
+  }
 }

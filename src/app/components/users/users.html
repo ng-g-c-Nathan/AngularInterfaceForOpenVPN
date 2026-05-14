@@ -1,0 +1,356 @@
+<div class="dashboard-card animate-fade-in bg-slate-950 border border-slate-800/60 p-6 rounded-xl shadow-xl text-slate-200">
+
+  <!-- ── HEADER ── -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold tracking-tight">Usuarios OpenVPN</h2>
+        <p class="text-sm text-slate-500">Gestión y monitoreo de accesos</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-lg px-2 py-1">
+        <span class="text-[10px] uppercase font-bold text-slate-500">Ver:</span>
+        <select [(ngModel)]="pageSize" (change)="applyFilters()"
+          class="bg-transparent text-xs font-bold text-slate-300 outline-none cursor-pointer">
+          @for (size of [5, 10, 20]; track size) {
+            <option [value]="size" class="bg-slate-900">{{ size }}</option>
+          }
+        </select>
+      </div>
+      <button (click)="refreshUsers()"
+        class="flex items-center gap-2 px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-lg hover:bg-slate-800 transition-colors group">
+        <i-lucide [img]="RefreshCw" [class.animate-spin]="isLoading"
+          class="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-500">
+        </i-lucide>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Refrescar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STATS ── -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+    <div class="bg-slate-900/50 border border-slate-800/50 rounded-xl p-3.5">
+      <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Total</p>
+      <p class="text-2xl font-bold font-mono text-slate-200">{{ statTotal }}</p>
+    </div>
+    <div class="bg-slate-900/50 border border-slate-800/50 rounded-xl p-3.5">
+      <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Conectados</p>
+      <p class="text-2xl font-bold font-mono text-emerald-400">{{ statOnline }}</p>
+    </div>
+    <div class="bg-slate-900/50 border border-slate-800/50 rounded-xl p-3.5">
+      <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Desconectados</p>
+      <p class="text-2xl font-bold font-mono text-slate-400">{{ statOffline }}</p>
+    </div>
+    <div class="bg-slate-900/50 border border-slate-800/50 rounded-xl p-3.5">
+      <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Revocados</p>
+      <p class="text-2xl font-bold font-mono text-rose-400">{{ statRevoked }}</p>
+    </div>
+    <div class="bg-slate-900/50 border border-slate-800/50 rounded-xl p-3.5 col-span-2 sm:col-span-1">
+      <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Tráfico total</p>
+      <p class="text-lg font-bold font-mono text-blue-400">{{ statTraffic }}</p>
+    </div>
+  </div>
+
+  <!-- ── FILTROS ── -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8 p-4 bg-slate-900/30 rounded-xl border border-slate-800/40">
+
+    <!-- Búsqueda -->
+    <div class="space-y-1.5 lg:col-span-2">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Buscar</label>
+      <input type="text" [(ngModel)]="filterSearch" (ngModelChange)="applyFilters()"
+        placeholder="usuario, IP…"
+        class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none
+               focus:border-blue-500/50 text-slate-300 placeholder:text-slate-600">
+    </div>
+
+    <!-- Estado -->
+    <div class="space-y-1.5">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Estado</label>
+      <select [(ngModel)]="filterStatus" (change)="applyFilters()"
+        class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none focus:border-blue-500/50 text-slate-300">
+        <option value="">Todos</option>
+        <option value="online">Conectado</option>
+        <option value="offline">Desconectado</option>
+        <option value="revoked">Revocado</option>
+      </select>
+    </div>
+
+    <!-- Grupo -->
+    <div class="space-y-1.5">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Grupo</label>
+      <select [(ngModel)]="filterGroup" (change)="applyFilters()"
+        class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none focus:border-blue-500/50 text-slate-300">
+        <option value="">Todos</option>
+        <option value="admin">Admin</option>
+        <option value="dev">Dev</option>
+        <option value="ops">Ops</option>
+        <option value="guest">Guest</option>
+      </select>
+    </div>
+
+    <!-- Protocolo -->
+    <div class="space-y-1.5">
+      <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest ml-1">Protocolo</label>
+      <select [(ngModel)]="filterProto" (change)="applyFilters()"
+        class="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg p-2.5 outline-none focus:border-blue-500/50 text-slate-300">
+        <option value="">Todos</option>
+        <option value="UDP">UDP</option>
+        <option value="TCP">TCP</option>
+      </select>
+    </div>
+
+    <!-- Reset -->
+    <div class="flex items-end sm:col-span-2 lg:col-span-5">
+      <button (click)="clearFilters()"
+        class="w-full h-[38px] bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50
+               text-[10px] uppercase font-bold text-slate-400 hover:text-white transition-all rounded-lg">
+        Limpiar filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- ── LISTA DE USUARIOS ── -->
+  <div class="space-y-3">
+    @for (user of pagedUsers; track user.id) {
+      @let isOpen     = selectedUserId === user.id;
+      @let isOnline   = user.status === 'online';
+      @let isRevoked  = user.status === 'revoked';
+      @let color      = groupColor(user.group);
+
+      <div class="bg-slate-900/40 border rounded-xl overflow-hidden transition-all duration-200"
+        [class]="isOpen ? 'border-slate-600' : 'border-slate-800 hover:border-slate-700'">
+
+        <!-- FILA COMPACTA -->
+        <button class="w-full text-left px-5 py-4 flex items-center gap-4"
+          (click)="toggleUser(user.id)">
+
+          <!-- Barra lateral de color por estado -->
+          <div class="w-1.5 self-stretch rounded-full flex-shrink-0"
+            [class]="sideBarClass(user)">
+          </div>
+
+          <!-- Avatar con iniciales coloreado por grupo -->
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                      text-xs font-bold font-mono"
+            [style.background]="color + '20'"
+            [style.color]="color"
+            [style.border]="'1px solid ' + color + '40'">
+            {{ getInitials(user.cn) }}
+          </div>
+
+          <!-- Info principal -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+
+              <!-- Badge estado -->
+              <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest"
+                [class]="statusBadgeClass(user)">
+                {{ statusLabel(user) }}
+              </span>
+
+              <!-- Badge grupo -->
+              <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase"
+                [style.background]="color + '18'"
+                [style.color]="color">
+                {{ user.group }}
+              </span>
+
+              <!-- Badge protocolo (solo si está online) -->
+              @if (isOnline) {
+                <span class="text-[10px] px-2 py-0.5 rounded font-bold bg-slate-700/50 text-slate-400">
+                  {{ user.proto }}
+                </span>
+              }
+
+            </div>
+
+            <!-- Nombre + usuario + IP -->
+            <p class="text-sm font-semibold text-slate-200 truncate">{{ user.cn }}</p>
+            <p class="text-[11px] font-mono text-slate-500 truncate">
+              {{ user.username }}
+              @if (isOnline) {
+                &nbsp;·&nbsp; {{ user.ip_vpn }}
+              }
+              &nbsp;·&nbsp; cert. {{ user.cert_exp }}
+            </p>
+          </div>
+
+          <!-- Chevron -->
+          <i-lucide [img]="ChevronRightIcon"
+            class="w-4 h-4 text-slate-600 flex-shrink-0 transition-transform duration-200"
+            [class.rotate-90]="isOpen">
+          </i-lucide>
+        </button>
+
+        <!-- PANEL DETALLE -->
+        @if (isOpen) {
+          <div class="border-t border-slate-800/60 px-5 pb-5 pt-4 space-y-5
+                      animate-in fade-in slide-in-from-top-1 duration-200">
+
+            <!-- Grid de campos -->
+            <div>
+              <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-3 flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full inline-block"
+                  [style.background]="color"></span>
+                Información de sesión
+              </p>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">IP VPN</p>
+                  <p class="text-xs font-mono font-bold text-slate-300">{{ user.ip_vpn }}</p>
+                </div>
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">IP Real</p>
+                  <p class="text-xs font-mono font-bold text-slate-300">{{ user.ip_real }}</p>
+                </div>
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Protocolo</p>
+                  <p class="text-xs font-mono font-bold text-blue-400">{{ user.proto }}</p>
+                </div>
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Cert. vence</p>
+                  <p class="text-xs font-mono font-bold"
+                    [class]="isRevoked ? 'text-rose-400' : 'text-slate-300'">
+                    {{ user.cert_exp }}
+                  </p>
+                </div>
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Conectado desde</p>
+                  <p class="text-xs font-mono text-slate-300">
+                    {{ user.connected_since ? (user.connected_since | date:'dd/MM/yy HH:mm') : '—' }}
+                  </p>
+                </div>
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Última vez</p>
+                  <p class="text-xs font-mono text-slate-300">
+                    {{ user.last_seen ? (user.last_seen | date:'dd/MM/yy HH:mm') : '—' }}
+                  </p>
+                </div>
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Tráfico ↓ RX</p>
+                  <p class="text-xs font-mono font-bold text-blue-400">{{ formatBytes(user.bytes_rx) }}</p>
+                </div>
+
+                <div class="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Tráfico ↑ TX</p>
+                  <p class="text-xs font-mono font-bold text-emerald-400">{{ formatBytes(user.bytes_tx) }}</p>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Barras de tráfico relativo (solo online) -->
+            @if (isOnline) {
+              <div>
+                <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-3 flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"></span>
+                  Uso de ancho de banda (relativo)
+                </p>
+                <div class="space-y-2.5 bg-slate-950/40 rounded-lg p-3 border border-slate-800/50">
+
+                  <!-- RX -->
+                  <div>
+                    <div class="flex justify-between text-[10px] text-slate-500 mb-1">
+                      <span>↓ Recibido</span>
+                      <span class="text-blue-400 font-bold">{{ formatBytes(user.bytes_rx) }}</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div class="h-full bg-blue-500 rounded-full transition-all duration-700"
+                        [style.width.%]="rxBarPct(user)">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- TX -->
+                  <div>
+                    <div class="flex justify-between text-[10px] text-slate-500 mb-1">
+                      <span>↑ Enviado</span>
+                      <span class="text-emerald-400 font-bold">{{ formatBytes(user.bytes_tx) }}</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div class="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                        [style.width.%]="txBarPct(user)">
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            }
+
+            <!-- Aviso revocado -->
+            @if (isRevoked) {
+              <div class="p-3 rounded-lg bg-rose-500/5 border border-rose-500/20 text-rose-400">
+                <div class="flex items-center gap-2 text-[11px] font-bold uppercase mb-1">
+                  <i-lucide [img]="AlertCircle" class="w-3.5 h-3.5"></i-lucide>
+                  Certificado revocado
+                </div>
+                <p class="text-xs opacity-80">
+                  Este usuario no puede conectarse. El certificado fue revocado y venció el {{ user.cert_exp }}.
+                </p>
+              </div>
+            }
+
+          </div>
+        }
+
+      </div>
+    }
+  </div>
+
+  <!-- ── PAGINACIÓN ── -->
+  @if (filteredUsers.length > 0) {
+    <div class="mt-6 flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/60 pt-5 gap-4">
+      <div class="text-xs text-slate-500 order-2 sm:order-1">
+        Mostrando
+        <span class="text-slate-200">{{ page * pageSize + 1 }}</span> –
+        <span class="text-slate-200">{{ Math.min((page + 1) * pageSize, filteredUsers.length) }}</span>
+        de <span class="text-slate-200">{{ filteredUsers.length }}</span>
+      </div>
+      <div class="flex items-center gap-2 order-1 sm:order-2">
+        <button (click)="prevPage()" [disabled]="page === 0"
+          class="p-2 rounded-lg border border-slate-800 bg-slate-900/50 text-slate-400
+                 hover:bg-slate-800 hover:text-white disabled:opacity-20 transition-all">
+          <i-lucide [img]="ChevronLeftIcon" class="w-4 h-4"></i-lucide>
+        </button>
+        <div class="flex items-center gap-1 mx-2">
+          <span class="text-xs font-black text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-md border border-blue-500/20">
+            {{ page + 1 }}
+          </span>
+          <span class="text-xs text-slate-600 px-1 italic">de</span>
+          <span class="text-xs font-bold text-slate-400 px-2">{{ totalPages || 1 }}</span>
+        </div>
+        <button (click)="nextPage()" [disabled]="page + 1 >= (totalPages || 1)"
+          class="p-2 rounded-lg border border-slate-800 bg-slate-900/50 text-slate-400
+                 hover:bg-slate-800 hover:text-white disabled:opacity-20 transition-all">
+          <i-lucide [img]="ChevronRightIcon" class="w-4 h-4"></i-lucide>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ── EMPTY STATE ── -->
+  @if (filteredUsers.length === 0 && !isLoading) {
+    <div class="py-20 text-center">
+      <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-800">
+        <i-lucide [img]="UserX" class="w-8 h-8 text-slate-700"></i-lucide>
+      </div>
+      <h3 class="text-slate-300 font-bold">Sin coincidencias</h3>
+      <p class="text-slate-600 text-xs mt-1">Ningún usuario cumple los filtros actuales</p>
+      <button (click)="clearFilters()" class="mt-4 text-xs text-blue-400 hover:underline">
+        Limpiar filtros
+      </button>
+    </div>
+  }
+
+</div>

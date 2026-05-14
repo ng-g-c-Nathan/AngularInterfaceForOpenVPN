@@ -61,6 +61,7 @@ export class App {
    * Centralizar esto aquí facilita añadir nuevas secciones en el futuro.
    */
   readonly navItems: NavItem[] = [
+    { id: 'users',    label: 'Usuarios VPN',         icon: Users      }, 
     { id: 'traffic', label: 'Tráfico por Días', icon: BarChart3 },
     { id: 'csv', label: 'Visualizar CSV', icon: FileText },
     { id: 'data', label: 'Análisis de Datos', icon: Activity }, 

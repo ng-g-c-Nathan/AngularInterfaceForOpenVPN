@@ -31,6 +31,8 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   // --- GESTIÓN DE MEMORIA ---
   /** Subject para gestionar la desuscripción automática de observables y evitar memory leaks */
   private destroy$ = new Subject<void>();
+  /** Referencia al intervalo de auto-refresco para poder cancelarlo */
+  private refreshInterval: any;
 
   // --- ICONOS (LUCIDE) ---
   /** Referencias de iconos para uso en el template HTML */
@@ -67,7 +69,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   /** Copia de seguridad de los datos originales para realizar filtros rápidos */
   aux: any[] = [];
   /** Indica si los datos están siendo cargados desde el servidor */
-  isLoading: boolean = true;
+  isLoading: boolean = false;
   /** Almacena la marca de tiempo de la última actualización exitosa */
   lastUpdate: Date = new Date();
   /** Define si el componente debe actualizarse automáticamente */
@@ -97,7 +99,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
     this.loadTrainingModels();
     if (this.autoRefresh) {
       // Configura el intervalo de refresco cada 10 minutos
-      setInterval(() => this.fetchFiles(), 10 * 60 * 1000);
+      this.refreshInterval = setInterval(() => this.fetchFiles(), 10 * 60 * 1000);
     }
   }
 
@@ -108,10 +110,11 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    clearInterval(this.refreshInterval);
   }
 
   // --- MÉTODOS DE DATOS (API) ---
-
+ 
   /**
    * Obtiene la lista de archivos CSV desde el backend.
    * Transforma las fechas de string a objetos Date para su manipulación.
@@ -122,7 +125,7 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          //console.log("No encontre nada en traffic list"+data)
+          ////console.log("No encontre nada en traffic list"+data)
           this.files = data.map((file: any) => ({
             name: file.name,
             lastModified: new Date(file.lastModified),
@@ -136,8 +139,9 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: (err) => {
-          console.error('Error al obtener los archivos CSV:', err);
+          //console.error('Error al obtener los archivos CSV:', err);
           this.isLoading = false;
+          this.cdr.detectChanges();
         }
       });
   }
@@ -148,12 +152,13 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
    * @param file Objeto del archivo a reparar.
    */
   onCsvErrorClick(file: any): void {
-    this.crudService.repararCsv(file.name).subscribe({
+    this.crudService.repararCsv(file.name)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: () => {
         file.csvStatus = 'pending';
         this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Error al intentar reparar:', err)
+      }
     });
   }
 
@@ -237,7 +242,12 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
      * * @returns {void}
      */
   loadTrainingModels(): void {
-    this.crudService.getTrainingLog().subscribe((resp: any) => {
+  this.crudService.getTrainingLog()
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+    next: (resp: any) => {
+      ////console.log("respuesta", resp);
+
       // Extraemos las llaves y mapeamos
       this.trainingQueue = Object.keys(resp)
         .map(key => {
@@ -256,14 +266,19 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
         .filter(m => m.status === 'done')
         .reverse();
 
-      // Seleccionar el primero por defecto (generalmente el más reciente)
+      // Seleccionar el primero por defecto
       if (this.trainingQueue.length > 0) {
         this.selectedModel = this.trainingQueue[0].folder_name;
       }
 
       this.cdr.detectChanges();
-    });
-  }
+    },
+
+    error: (err) => {
+      ////console.error("Error al obtener training log:", err);
+    }
+  });
+}
 
   /**
    * Prepara y visualiza la interfaz modal para iniciar la revisión de un archivo.
@@ -293,7 +308,9 @@ export class TrafficCsvListComponent implements OnInit, OnDestroy {
 
     this.showModelModal = false;
     const csvPath = this.selectedFileForReview.csvPath;
-    this.crudService.scoreTraffic(csvPath, this.selectedModel).subscribe({
+    this.crudService.scoreTraffic(csvPath, this.selectedModel)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: () => {
         this.showReviewMessage = true;
         setTimeout(() => {

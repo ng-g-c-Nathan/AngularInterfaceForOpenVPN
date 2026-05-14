@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CRUD } from '../../service/Crud/crud';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import {
   LucideAngularModule, Search, Trash2, Activity, SearchCode, Calendar,
   ChevronLeftIcon, ChevronRightIcon, RefreshCw, Clock, Database, Cpu,
@@ -22,6 +23,9 @@ import {
   styleUrls: ['./monitor.css'],
 })
 export class Monitor implements OnInit, OnDestroy {
+
+  // --- GESTIÓN DE MEMORIA ---
+  private destroy$ = new Subject<void>();
 
   // --- ICONOS (LUCIDE) ---
   readonly Activity = Activity;
@@ -67,7 +71,10 @@ export class Monitor implements OnInit, OnDestroy {
 
   selectedJobId: string | null = null;
 
-  constructor(private crudService: CRUD) { }
+  constructor(
+    private crudService: CRUD,
+    private cdr: ChangeDetectorRef,
+  ) { }
 
   ngOnInit(): void {
     this.refreshJobs();
@@ -77,6 +84,8 @@ export class Monitor implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.refreshInterval) clearInterval(this.refreshInterval);
   }
 
@@ -95,20 +104,22 @@ export class Monitor implements OnInit, OnDestroy {
 
   refreshJobs(): void {
     this.isLoading = true;
-    this.crudService.getTrafficHistory().subscribe({
-      next: (data: any[]) => {
-        console.log("Monitor jeje"+data)
-        this.jobs = data;
-        this.applyFilters();
-        this.isLoading = false;
-        this.lastUpdate = new Date();
-      },
-      error: (e) => {
-        console.log("Error"+e)
-        this.isLoading = false;
-        this.jobs = [];
-      }
-    });
+    this.crudService.getTrafficHistory()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data: any[]) => {
+          this.jobs = data;
+          this.applyFilters();
+          this.isLoading = false;
+          this.lastUpdate = new Date();
+          this.cdr.detectChanges();
+        },
+        error: (e) => {
+          this.isLoading = false;
+          this.jobs = [];
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   // --- FILTRADO UNIFICADO ---

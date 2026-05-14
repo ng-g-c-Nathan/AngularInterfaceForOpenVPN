@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CRUD } from '../../service/Crud/crud';
@@ -62,7 +62,9 @@ export class TrafficChart implements OnInit {
   /** Fecha de fin capturada desde el input type="date" */
   filterTo: string = '';
 
-  constructor(private crud: CRUD) { }
+  // FIX: Se inyecta ChangeDetectorRef para forzar la detección de cambios
+  // después de que el subscribe actualiza `files` fuera de la zona de Angular.
+  constructor(private crud: CRUD, private cdr: ChangeDetectorRef) { }
 
   /**
    * Ciclo de vida: Inicializa el componente cargando el rango predeterminado.
@@ -150,7 +152,7 @@ export class TrafficChart implements OnInit {
       .pipe(take(1)) // Evita fugas de memoria cerrando la suscripción tras el primer valor
       .subscribe({
         next: (data: any[]) => {
-          console.log(data)
+         // console.log(data)
           // Mapeo y normalización de la data para el template
           this.files = data.map(item => ({
             ...item,
@@ -160,10 +162,12 @@ export class TrafficChart implements OnInit {
           }));
 
           this.isLoading = false;
+          this.cdr.detectChanges(); // FIX: fuerza el re-render del template
         },
         error: (err) => {
-          console.error('Error crítico cargando tráfico:', err);
+        //  console.error('Error crítico cargando tráfico:', err);
           this.isLoading = false;
+          this.cdr.detectChanges(); // FIX: también en error para quitar el spinner
         }
       });
   }

@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import {
   LucideAngularModule,
   Activity, ShieldAlert, Zap, ChevronRight, Loader2, BrainCircuit, X, CheckCircle2, Clock
@@ -22,8 +23,14 @@ import { CRUD } from '../../service/Crud/crud';
   templateUrl: './data-analyst.html',
   styleUrl: './data-analyst.css',
 })
-export class DataAnalyst implements OnInit {
-  
+export class DataAnalyst implements OnInit, OnDestroy {
+
+  // --- GESTIÓN DE MEMORIA ---
+  /** Subject para gestionar la desuscripción automática de observables */
+  private destroy$ = new Subject<void>();
+  /** Referencia al intervalo de polling para poder cancelarlo */
+  private refreshInterval: any;
+
   // --- ICONOS (LUCIDE) ---
   /** Referencias de iconos para uso directo en el template HTML */
   readonly Activity = Activity;
@@ -68,6 +75,7 @@ export class DataAnalyst implements OnInit {
   constructor(
     private crud: CRUD,
     private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
   ) {}
 
   /**
@@ -80,7 +88,17 @@ export class DataAnalyst implements OnInit {
     this.loadTrainingLog();
     
     // Polling de actualización automática
-    setInterval(() => this.loadTrainingLog(), 10000);
+    this.refreshInterval = setInterval(() => this.loadTrainingLog(), 10000);
+  }
+
+  /**
+   * @lifecycle ngOnDestroy
+   * Cancela el intervalo de polling y completa las suscripciones activas.
+   */
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    clearInterval(this.refreshInterval);
   }
 
   // --- MÉTODOS DE CARGA DE DATOS (API) ---
@@ -90,10 +108,14 @@ export class DataAnalyst implements OnInit {
    * Consulta al servicio CRUD la información de los modelos disponibles.
    */
   loadModelsInfo() {
-    this.crud.getModelsInfo().subscribe((resp: any[]) => {
-      console.log(resp)
-      this.trainedModels = resp;
-    });
+    this.crud.getModelsInfo()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((resp: any[]) => {
+        this.ngZone.run(() => {
+          this.trainedModels = resp;
+          this.cdr.detectChanges();
+        });
+      });
   }
 
   /**
@@ -102,24 +124,29 @@ export class DataAnalyst implements OnInit {
    * y mapea las fases de entrenamiento para la visualización de progreso.
    */
   loadTrainingLog() {
-    this.crud.getTrainingLog().subscribe((resp: any) => {
-      this.trainingQueue = Object.keys(resp).map(key => {
-        const item = resp[key];
-        return {
-          id: key,
-          folder_name: item.folder_name,
-          mode: item.mode,
-          status: item.status,
-          started_at: item.started_at,
-          finished_at: item.finished_at,
-          elapsed_sec: item.elapsed_sec,
-          num_rows: item.num_rows,
-          n_features: item.n_features,
-          // Normalización de fases para la UI
-          phases: this.mapPhases(item.phases)
-        };
-      }).reverse(); // Orden descendente (más nuevo arriba)
-    });
+    this.crud.getTrainingLog()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((resp: any) => {
+        this.ngZone.run(() => {
+          this.trainingQueue = Object.keys(resp).map(key => {
+            const item = resp[key];
+            return {
+              id: key,
+              folder_name: item.folder_name,
+              mode: item.mode,
+              status: item.status,
+              started_at: item.started_at,
+              finished_at: item.finished_at,
+              elapsed_sec: item.elapsed_sec,
+              num_rows: item.num_rows,
+              n_features: item.n_features,
+              // Normalización de fases para la UI
+              phases: this.mapPhases(item.phases)
+            };
+          }).reverse(); // Orden descendente (más nuevo arriba)
+          this.cdr.detectChanges();
+        });
+      });
   }
 
   // --- LÓGICA DE PROCESAMIENTO INTERNO ---
@@ -189,21 +216,20 @@ export class DataAnalyst implements OnInit {
     const fDate = this.trainRange.start || undefined;
     const tDate = this.trainRange.end || undefined;
 
-    this.crud.trainModels(this.selectedTrainingEffort, fDate, tDate).subscribe({
+    this.crud.trainModels(this.selectedTrainingEffort, fDate, tDate)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (resp) => {
-       // console.log('Entrenamiento lanzado con éxito:', resp);
-        
         // Delay visual para confirmar la acción al usuario
         setTimeout(() => {
-          this.isTraining = false;
-          this.showTrainingModal = false;
-          this.selectedTrainingEffort = null;
-          this.trainRange = { start: '', end: '' };
-          
-          this.loadTrainingLog(); // Refresco inmediato
-
-          // Forzamos detección debido a que el cambio ocurre dentro de una zona asíncrona (setTimeout)
-          this.cdr.detectChanges();
+          this.ngZone.run(() => {
+            this.isTraining = false;
+            this.showTrainingModal = false;
+            this.selectedTrainingEffort = null;
+            this.trainRange = { start: '', end: '' };
+            this.loadTrainingLog();
+            this.cdr.detectChanges();
+          });
         }, 800);
       },
       error: (err) => {
